@@ -20,7 +20,12 @@ contracts:
 address_format: lowercase
 chains:
   - id: 46630
-    start_block: 0
+    start_block: 127577000
+    rpc:
+      - url: https://robinhood-testnet.drpc.org
+        for: sync
+      - url: https://robinhood-sepolia-rpc.publicnode.com
+        for: fallback
     contracts:
       - name: PotsRoundManager
         address: '0x0000000000000000000000000000000000000000'
