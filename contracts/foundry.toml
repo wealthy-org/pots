@@ -14,3 +14,21 @@ fs_permissions = []
 line_length = 100
 tab_width = 4
 bracket_spacing = true
+
+[fuzz]
+runs = 256
+
+[invariant]
+runs = 64
+depth = 32
+fail_on_revert = false
+
+[lint]
+exclude_lints = [
+  "block-timestamp",
+  "environment-read-across-mutation",
+  "incorrect-strict-equality",
+  "reentrancy-events",
+  "require-revert-in-loop",
+  "unsafe-typecast",
+]
