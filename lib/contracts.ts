@@ -19,6 +19,10 @@ function resolveAddress(value: string | undefined, fallback: `0x${string}`): `0x
   return fallback
 }
 
+function resolveBlock(value: string | undefined): bigint {
+  return value && /^\d+$/.test(value) ? BigInt(value) : 0n
+}
+
 export const managerAddress = resolveAddress(
   process.env.NEXT_PUBLIC_ROUND_MANAGER_ADDRESS,
   activeChain.id === 31337 ? anvilDefaults.manager : '0x0000000000000000000000000000000000000000',
@@ -28,3 +32,6 @@ export const tokenAddress = resolveAddress(
   process.env.NEXT_PUBLIC_POTS_TOKEN_ADDRESS,
   activeChain.id === 31337 ? anvilDefaults.token : '0x0000000000000000000000000000000000000000',
 )
+
+/** First block that can hold manager events; contract event scans start here instead of block 0. */
+export const managerDeployBlock = resolveBlock(process.env.NEXT_PUBLIC_ROUND_MANAGER_DEPLOY_BLOCK)

@@ -1,17 +1,12 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { parseAbiItem } from 'viem'
 import { usePublicClient } from 'wagmi'
+import { collectLogs } from '@/lib/contract-reads'
+import { entryPlacedEvent, roundSettledEvent } from '@/lib/contract-events'
 import { managerAddress } from '@/lib/contracts'
+import { CONTRACT_SCAN_INTERVAL_MS, indexerEnabled } from '@/lib/indexer'
 import { shareAmount } from '@/lib/shares'
-
-const settledEvent = parseAbiItem(
-  'event RoundSettled(uint256 indexed roundId, uint8 winningSquare, uint256 totalEth, uint256 winningSquareEth, uint256 pool, uint256 rolloverOut, bool jackpotHit)',
-)
-const entryEvent = parseAbiItem(
-  'event EntryPlaced(uint256 indexed roundId, address indexed wallet, uint8[] squareIds, uint256 amountPerSquare, uint256 total)',
-)
 
 export type SettledRound = {
   roundId: bigint
@@ -40,16 +35,15 @@ export function useSettledRounds(limit = 3) {
   return useQuery<SettledRoundsData>({
     queryKey: ['settled-rounds', managerAddress, limit],
     enabled: Boolean(client),
-    refetchInterval: 10000,
+    refetchInterval: indexerEnabled ? CONTRACT_SCAN_INTERVAL_MS : 10000,
     queryFn: async () => {
       if (!client) {
         return { rounds: [], winners: [] }
       }
-      const logs = await client.getLogs({
-        address: managerAddress,
-        event: settledEvent,
-        fromBlock: 0n,
-      })
+      const head = await client.getBlockNumber()
+      const logs = await collectLogs(head, (range) =>
+        client.getLogs({ address: managerAddress, event: roundSettledEvent, ...range }),
+      )
       const rounds: SettledRound[] = logs
         .slice(-limit)
         .reverse()
@@ -68,12 +62,14 @@ export function useSettledRounds(limit = 3) {
         return { rounds, winners: [] }
       }
 
-      const entries = await client.getLogs({
-        address: managerAddress,
-        event: entryEvent,
-        args: { roundId: latest.roundId },
-        fromBlock: 0n,
-      })
+      const entries = await collectLogs(head, (range) =>
+        client.getLogs({
+          address: managerAddress,
+          event: entryPlacedEvent,
+          args: { roundId: latest.roundId },
+          ...range,
+        }),
+      )
 
       const byWallet = new Map<string, bigint>()
       for (const entry of entries) {

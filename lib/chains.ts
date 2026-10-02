@@ -1,7 +1,8 @@
 import { defineChain } from 'viem'
 
 const chainId = Number(process.env.NEXT_PUBLIC_ROBINHOOD_CHAIN_ID ?? 46630)
-const rpcUrl = process.env.NEXT_PUBLIC_ROBINHOOD_RPC_URL ?? 'https://robinhood-testnet.drpc.org'
+const rpcUrl =
+  process.env.NEXT_PUBLIC_ROBINHOOD_RPC_URL ?? 'https://robinhood-sepolia-rpc.publicnode.com'
 
 function chainName(id: number): string {
   if (id === 31337) return 'Anvil Local'

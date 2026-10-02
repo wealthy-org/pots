@@ -5,6 +5,13 @@ import { Panel } from '@/components/ui/panel'
 import { managerAddress, potsTokenAbi, roundManagerAbi, tokenAddress } from '@/lib/contracts'
 import { formatWeiToEth } from '@/lib/wei'
 
+function readPots(read: { data: unknown; isError: boolean }, decimals: number): string {
+  if (read.data !== undefined) {
+    return `${formatWeiToEth(read.data as bigint, decimals)} POTS`
+  }
+  return read.isError ? 'Unavailable' : 'Loading'
+}
+
 export default function TokenPage() {
   const name = useReadContract({ address: tokenAddress, abi: potsTokenAbi, functionName: 'name' })
   const symbol = useReadContract({
@@ -24,7 +31,9 @@ export default function TokenPage() {
     functionName: 'potEmissionPerRound',
   })
 
-  const emissionWei = (emission.data as bigint | undefined) ?? 0n
+  const emissionValue = readPots(emission, 4)
+  const totalSupplyValue = readPots(totalSupply, 4)
+  const capValue = readPots(cap, 2)
 
   return (
     <section aria-labelledby="token-title" className="flex flex-col gap-4">
@@ -41,18 +50,9 @@ export default function TokenPage() {
         <dl className="grid gap-3 text-sm sm:grid-cols-2">
           <Fact label="Name" value={(name.data as string | undefined) ?? '...'} />
           <Fact label="Symbol" value={(symbol.data as string | undefined) ?? '...'} />
-          <Fact
-            label="Emission per eligible round"
-            value={`${formatWeiToEth(emissionWei, 4)} POTS`}
-          />
-          <Fact
-            label="Total supply"
-            value={`${formatWeiToEth((totalSupply.data as bigint | undefined) ?? 0n, 4)} POTS`}
-          />
-          <Fact
-            label="Cap"
-            value={`${formatWeiToEth((cap.data as bigint | undefined) ?? 0n, 2)} POTS`}
-          />
+          <Fact label="Emission per eligible round" value={emissionValue} />
+          <Fact label="Total supply" value={totalSupplyValue} />
+          <Fact label="Cap" value={capValue} />
           <Fact label="Chain ID" value={process.env.NEXT_PUBLIC_ROBINHOOD_CHAIN_ID ?? '46630'} />
         </dl>
       </Panel>
