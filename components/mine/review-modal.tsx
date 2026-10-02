@@ -1,0 +1,125 @@
+'use client'
+
+import { encodeFunctionData } from 'viem'
+import { useAccount, useEstimateFeesPerGas, useEstimateGas } from 'wagmi'
+import { Button } from '@/components/ui/button'
+import { Modal } from '@/components/ui/modal'
+import { managerAddress, roundManagerAbi } from '@/lib/contracts'
+import { formatWeiToEth } from '@/lib/wei'
+
+export function ReviewModal({
+  open,
+  onClose,
+  onConfirm,
+  roundId,
+  closeAt,
+  squares,
+  amountPerSquare,
+  totalWei,
+  isSubmitting,
+  errorMessage,
+}: {
+  open: boolean
+  onClose: () => void
+  onConfirm: () => void
+  roundId?: bigint
+  closeAt?: bigint
+  squares: number[]
+  amountPerSquare: bigint
+  totalWei: bigint
+  isSubmitting: boolean
+  errorMessage: string | null
+}) {
+  const { address } = useAccount()
+
+  const gas = useEstimateGas({
+    account: address,
+    to: managerAddress,
+    value: totalWei,
+    data: encodeFunctionData({
+      abi: roundManagerAbi,
+      functionName: 'enter',
+      args: [squares, amountPerSquare],
+    }),
+    query: { enabled: open && squares.length > 0 && totalWei > 0n },
+  })
+
+  const fees = useEstimateFeesPerGas()
+  const feePerGas = fees.data?.maxFeePerGas ?? fees.data?.gasPrice
+  const estimatedFee = gas.data && feePerGas ? gas.data * feePerGas : undefined
+
+  const deadline =
+    closeAt && closeAt > 0n
+      ? new Date(Number(closeAt) * 1000).toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      : 'Set on first entry'
+
+  return (
+    <Modal open={open} onClose={onClose} title="Review entry">
+      <div className="flex flex-col gap-2.5 text-sm">
+        <Row label="Round" value={roundId !== undefined ? `#${roundId.toString()}` : '-'} />
+        <Row label="Deadline" value={deadline} />
+        <Row label="Squares" value={squares.length ? squares.join(', ') : '-'} />
+        <Row label="Amount per block" value={`${formatWeiToEth(amountPerSquare, 5)} ETH`} />
+        <Row label="Total" value={`${formatWeiToEth(totalWei, 5)} ETH`} strong />
+        <Row label="Contract" value={managerAddress} mono />
+        <Row
+          label="Estimated network fee"
+          value={
+            estimatedFee !== undefined ? `${formatWeiToEth(estimatedFee, 8)} ETH` : 'Estimating...'
+          }
+        />
+      </div>
+
+      <p className="mt-4 text-xs text-text-2">
+        ETH deployed on blocks that do not win is not returned. Outcomes are random and the return
+        can be lower than the entry.
+      </p>
+      {squares.length === 25 ? (
+        <p className="mt-2 text-xs text-gold">
+          All 25 squares selected: eligibility on the winning square is certain, but the ETH return
+          is not guaranteed to exceed the entry and fee.
+        </p>
+      ) : null}
+      {errorMessage ? (
+        <p role="alert" className="mt-2 text-xs text-loss">
+          {errorMessage}
+        </p>
+      ) : null}
+
+      <div className="mt-4 flex justify-end gap-2">
+        <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
+          Cancel
+        </Button>
+        <Button onClick={onConfirm} disabled={isSubmitting || squares.length === 0}>
+          {isSubmitting ? 'Confirming...' : 'Confirm in wallet'}
+        </Button>
+      </div>
+    </Modal>
+  )
+}
+
+function Row({
+  label,
+  value,
+  strong,
+  mono,
+}: {
+  label: string
+  value: string
+  strong?: boolean
+  mono?: boolean
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <span className="text-text-2">{label}</span>
+      <span
+        className={`max-w-[60%] text-right ${mono ? 'font-mono text-xs break-all' : ''} ${strong ? 'font-semibold' : ''}`}
+      >
+        {value}
+      </span>
+    </div>
+  )
+}

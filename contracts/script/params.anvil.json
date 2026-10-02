@@ -1,0 +1,34 @@
+{
+  "token": {
+    "name": "POTS",
+    "symbol": "POTS",
+    "cap": "1000000000000000000000000000"
+  },
+  "fees": {
+    "treasuryBps": 900,
+    "jackpotBps": 100,
+    "payoutBps": 9000
+  },
+  "entry": {
+    "minPerSquareWei": "1000000000000000",
+    "maxPerSquareWei": "1000000000000000000"
+  },
+  "round": {
+    "windowSeconds": 60
+  },
+  "jackpot": {
+    "chanceDenominator": 625
+  },
+  "emission": {
+    "perRoundWei": "1000000000000000000"
+  },
+  "randomness": {
+    "diceProvider": "0x000000000000000000000000000000000000d1ce",
+    "callbackGasLimit": 200000,
+    "refundDelayBlocks": 6
+  },
+  "provisional": [
+    "Local Anvil economics mirror the testnet parameter file",
+    "MockDiceCoordinator is deployed by the script; no external provider is used"
+  ]
+}

@@ -9,6 +9,7 @@ out/
 contracts/out/
 contracts/cache/
 contracts/broadcast/
+contracts/deployments/
 
 indexer/node_modules/
 indexer/generated/

@@ -1,69 +1,495 @@
-﻿
-Ôò¡-------------+-----------------------------------------------------------------+--------------------------------------------------------------------Ôò«
-| Type        | Signature                                                       | Selector                                                           |
-+====================================================================================================================================================+
-| event       | Approval(address,address,uint256)                               | 0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925 |
-|-------------+-----------------------------------------------------------------+--------------------------------------------------------------------|
-| event       | MinterSet(address)                                              | 0x726b590ef91a8c76ad05bbe91a57ef84605276528f49cd47d787f558a4e755b6 |
-|-------------+-----------------------------------------------------------------+--------------------------------------------------------------------|
-| event       | OwnershipTransferred(address,address)                           | 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0 |
-|-------------+-----------------------------------------------------------------+--------------------------------------------------------------------|
-| event       | Transfer(address,address,uint256)                               | 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef |
-|-------------+-----------------------------------------------------------------+--------------------------------------------------------------------|
-| error       | CapExceeded()                                                   | 0xa4875a49                                                         |
-|-------------+-----------------------------------------------------------------+--------------------------------------------------------------------|
-| error       | ERC20InsufficientAllowance(address,uint256,uint256)             | 0xfb8f41b2                                                         |
-|-------------+-----------------------------------------------------------------+--------------------------------------------------------------------|
-| error       | ERC20InsufficientBalance(address,uint256,uint256)               | 0xe450d38c                                                         |
-|-------------+-----------------------------------------------------------------+--------------------------------------------------------------------|
-| error       | ERC20InvalidApprover(address)                                   | 0xe602df05                                                         |
-|-------------+-----------------------------------------------------------------+--------------------------------------------------------------------|
-| error       | ERC20InvalidReceiver(address)                                   | 0xec442f05                                                         |
-|-------------+-----------------------------------------------------------------+--------------------------------------------------------------------|
-| error       | ERC20InvalidSender(address)                                     | 0x96c6fd1e                                                         |
-|-------------+-----------------------------------------------------------------+--------------------------------------------------------------------|
-| error       | ERC20InvalidSpender(address)                                    | 0x94280d62                                                         |
-|-------------+-----------------------------------------------------------------+--------------------------------------------------------------------|
-| error       | OwnableInvalidOwner(address)                                    | 0x1e4fbdf7                                                         |
-|-------------+-----------------------------------------------------------------+--------------------------------------------------------------------|
-| error       | OwnableUnauthorizedAccount(address)                             | 0x118cdaa7                                                         |
-|-------------+-----------------------------------------------------------------+--------------------------------------------------------------------|
-| error       | Unauthorized()                                                  | 0x82b42900                                                         |
-|-------------+-----------------------------------------------------------------+--------------------------------------------------------------------|
-| error       | ZeroAddress()                                                   | 0xd92e233d                                                         |
-|-------------+-----------------------------------------------------------------+--------------------------------------------------------------------|
-| function    | allowance(address,address) view returns (uint256)               | 0xdd62ed3e                                                         |
-|-------------+-----------------------------------------------------------------+--------------------------------------------------------------------|
-| function    | approve(address,uint256) nonpayable returns (bool)              | 0x095ea7b3                                                         |
-|-------------+-----------------------------------------------------------------+--------------------------------------------------------------------|
-| function    | balanceOf(address) view returns (uint256)                       | 0x70a08231                                                         |
-|-------------+-----------------------------------------------------------------+--------------------------------------------------------------------|
-| function    | cap() view returns (uint256)                                    | 0x355274ea                                                         |
-|-------------+-----------------------------------------------------------------+--------------------------------------------------------------------|
-| function    | decimals() view returns (uint8)                                 | 0x313ce567                                                         |
-|-------------+-----------------------------------------------------------------+--------------------------------------------------------------------|
-| function    | mint(address,uint256) nonpayable                                | 0x40c10f19                                                         |
-|-------------+-----------------------------------------------------------------+--------------------------------------------------------------------|
-| function    | minter() view returns (address)                                 | 0x07546172                                                         |
-|-------------+-----------------------------------------------------------------+--------------------------------------------------------------------|
-| function    | name() view returns (string)                                    | 0x06fdde03                                                         |
-|-------------+-----------------------------------------------------------------+--------------------------------------------------------------------|
-| function    | owner() view returns (address)                                  | 0x8da5cb5b                                                         |
-|-------------+-----------------------------------------------------------------+--------------------------------------------------------------------|
-| function    | renounceOwnership() nonpayable                                  | 0x715018a6                                                         |
-|-------------+-----------------------------------------------------------------+--------------------------------------------------------------------|
-| function    | setMinter(address) nonpayable                                   | 0xfca3b5aa                                                         |
-|-------------+-----------------------------------------------------------------+--------------------------------------------------------------------|
-| function    | symbol() view returns (string)                                  | 0x95d89b41                                                         |
-|-------------+-----------------------------------------------------------------+--------------------------------------------------------------------|
-| function    | totalSupply() view returns (uint256)                            | 0x18160ddd                                                         |
-|-------------+-----------------------------------------------------------------+--------------------------------------------------------------------|
-| function    | transfer(address,uint256) nonpayable returns (bool)             | 0xa9059cbb                                                         |
-|-------------+-----------------------------------------------------------------+--------------------------------------------------------------------|
-| function    | transferFrom(address,address,uint256) nonpayable returns (bool) | 0x23b872dd                                                         |
-|-------------+-----------------------------------------------------------------+--------------------------------------------------------------------|
-| function    | transferOwnership(address) nonpayable                           | 0xf2fde38b                                                         |
-|-------------+-----------------------------------------------------------------+--------------------------------------------------------------------|
-| constructor | constructor(string,string,uint256,address) nonpayable           |                                                                    |
-Ôò░-------------+-----------------------------------------------------------------+--------------------------------------------------------------------Ôò»
-
+[
+  {
+    "type": "constructor",
+    "inputs": [
+      {
+        "name": "name_",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "symbol_",
+        "type": "string",
+        "internalType": "string"
+      },
+      {
+        "name": "cap_",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "owner_",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "allowance",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "spender",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "approve",
+    "inputs": [
+      {
+        "name": "spender",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "value",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "balanceOf",
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "cap",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "decimals",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint8",
+        "internalType": "uint8"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "mint",
+    "inputs": [
+      {
+        "name": "to",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "minter",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "name",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "owner",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "renounceOwnership",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setMinter",
+    "inputs": [
+      {
+        "name": "minter_",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "symbol",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "string",
+        "internalType": "string"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "totalSupply",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "transfer",
+    "inputs": [
+      {
+        "name": "to",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "value",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "transferFrom",
+    "inputs": [
+      {
+        "name": "from",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "to",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "value",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "transferOwnership",
+    "inputs": [
+      {
+        "name": "newOwner",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "event",
+    "name": "Approval",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "spender",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "value",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "MinterSet",
+    "inputs": [
+      {
+        "name": "minter",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "OwnershipTransferred",
+    "inputs": [
+      {
+        "name": "previousOwner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "newOwner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "Transfer",
+    "inputs": [
+      {
+        "name": "from",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "to",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "value",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "CapExceeded",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ERC20InsufficientAllowance",
+    "inputs": [
+      {
+        "name": "spender",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "allowance",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "needed",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ERC20InsufficientBalance",
+    "inputs": [
+      {
+        "name": "sender",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "balance",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "needed",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ERC20InvalidApprover",
+    "inputs": [
+      {
+        "name": "approver",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ERC20InvalidReceiver",
+    "inputs": [
+      {
+        "name": "receiver",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ERC20InvalidSender",
+    "inputs": [
+      {
+        "name": "sender",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "ERC20InvalidSpender",
+    "inputs": [
+      {
+        "name": "spender",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "OwnableInvalidOwner",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "OwnableUnauthorizedAccount",
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "Unauthorized",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ZeroAddress",
+    "inputs": []
+  }
+]

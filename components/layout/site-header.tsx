@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { ConnectButton } from '@/components/wallet/connect-button'
 import { NAV_LINKS } from '@/lib/nav'
 
 export function SiteHeader() {
@@ -54,6 +55,10 @@ export function SiteHeader() {
           )
         })}
       </nav>
+
+      <div className="ml-auto flex items-center gap-2">
+        <ConnectButton />
+      </div>
     </header>
   )
 }

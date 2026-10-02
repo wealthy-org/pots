@@ -2,8 +2,10 @@ import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import { Inter, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
+import { Providers } from './providers'
 import { SiteHeader } from '@/components/layout/site-header'
 import { SiteTabbar } from '@/components/layout/site-tabbar'
+import { NetworkBanner } from '@/components/wallet/network-banner'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -26,11 +28,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} ${jetbrains.variable}`}>
       <body>
-        <SiteHeader />
-        <main className="relative z-[1] mx-auto w-full max-w-[1180px] px-4 pt-6 pb-24 md:px-5 md:pb-10">
-          {children}
-        </main>
-        <SiteTabbar />
+        <Providers>
+          <SiteHeader />
+          <main className="relative z-[1] mx-auto w-full max-w-[1180px] px-4 pt-6 pb-24 md:px-5 md:pb-10">
+            <NetworkBanner />
+            {children}
+          </main>
+          <SiteTabbar />
+        </Providers>
       </body>
     </html>
   )

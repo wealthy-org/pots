@@ -1,0 +1,37 @@
+{
+  "token": {
+    "name": "POTS",
+    "symbol": "POTS",
+    "cap": "1000000000000000000000000000"
+  },
+  "fees": {
+    "treasuryBps": 900,
+    "jackpotBps": 100,
+    "payoutBps": 9000
+  },
+  "entry": {
+    "minPerSquareWei": "1000000000000000",
+    "maxPerSquareWei": "1000000000000000000"
+  },
+  "round": {
+    "windowSeconds": 60
+  },
+  "jackpot": {
+    "chanceDenominator": 625
+  },
+  "emission": {
+    "perRoundWei": "1000000000000000000"
+  },
+  "randomness": {
+    "diceCoordinator": "0xE4F1cc334a3d5FFf8b588573921CA9e2FFE22E5c",
+    "diceProvider": "0x8741b8a825644D9Ef18Faf2DAB5e9b47B900F2b6",
+    "callbackGasLimit": 200000,
+    "refundDelayBlocks": 6
+  },
+  "provisional": [
+    "token.symbol: final symbol pending owner confirmation (D-02)",
+    "token.cap: pending owner decision (D-02)",
+    "entry.maxPerSquareWei: provisional testnet value; D-01 open",
+    "emission.perRoundWei: 1 POTS per eligible round approved; reserve or mint model pending (D-02)"
+  ]
+}

@@ -1,69 +1,422 @@
-﻿
-Ôò¡-------------+-------------------------------------------------------------+--------------------------------------------------------------------Ôò«
-| Type        | Signature                                                   | Selector                                                           |
-+================================================================================================================================================+
-| event       | ManagerSet(address)                                         | 0x60a0f5b9f9e81e98216071b85826681c796256fe3d1354ecb675580fba64fa69 |
-|-------------+-------------------------------------------------------------+--------------------------------------------------------------------|
-| event       | OwnershipTransferred(address,address)                       | 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0 |
-|-------------+-------------------------------------------------------------+--------------------------------------------------------------------|
-| event       | RandomnessForwarded(uint256,uint64)                         | 0xb3904ea0407105d14575e0230710a934845fdbd204640c11e9896fa76ec5f8f9 |
-|-------------+-------------------------------------------------------------+--------------------------------------------------------------------|
-| event       | RandomnessRefunded(uint256,uint64,uint256)                  | 0x96b7ccd698cd5aa9d65641b6b27627cece60b512d02af3cb112fc9635d9a11cc |
-|-------------+-------------------------------------------------------------+--------------------------------------------------------------------|
-| error       | AlreadyRefunded()                                           | 0xa85e6f1a                                                         |
-|-------------+-------------------------------------------------------------+--------------------------------------------------------------------|
-| error       | FeeMismatch()                                               | 0x36a9d011                                                         |
-|-------------+-------------------------------------------------------------+--------------------------------------------------------------------|
-| error       | NotCoordinator()                                            | 0x9ec853e6                                                         |
-|-------------+-------------------------------------------------------------+--------------------------------------------------------------------|
-| error       | NotManager()                                                | 0xc0fc8a8a                                                         |
-|-------------+-------------------------------------------------------------+--------------------------------------------------------------------|
-| error       | OwnableInvalidOwner(address)                                | 0x1e4fbdf7                                                         |
-|-------------+-------------------------------------------------------------+--------------------------------------------------------------------|
-| error       | OwnableUnauthorizedAccount(address)                         | 0x118cdaa7                                                         |
-|-------------+-------------------------------------------------------------+--------------------------------------------------------------------|
-| error       | RequestExists()                                             | 0xeadeb85a                                                         |
-|-------------+-------------------------------------------------------------+--------------------------------------------------------------------|
-| error       | TransferFailed()                                            | 0x90b8ec18                                                         |
-|-------------+-------------------------------------------------------------+--------------------------------------------------------------------|
-| error       | UnknownRequest()                                            | 0x6d080297                                                         |
-|-------------+-------------------------------------------------------------+--------------------------------------------------------------------|
-| error       | ZeroAddress()                                               | 0xd92e233d                                                         |
-|-------------+-------------------------------------------------------------+--------------------------------------------------------------------|
-| function    | callbackGasLimit() view returns (uint32)                    | 0x24f74697                                                         |
-|-------------+-------------------------------------------------------------+--------------------------------------------------------------------|
-| function    | dice() view returns (IDiceEntropy)                          | 0x569f1bfc                                                         |
-|-------------+-------------------------------------------------------------+--------------------------------------------------------------------|
-| function    | entropyCallback(uint64,address,bytes32) nonpayable          | 0x24185135                                                         |
-|-------------+-------------------------------------------------------------+--------------------------------------------------------------------|
-| function    | feeOfRound(uint256) view returns (uint256)                  | 0xc247c82f                                                         |
-|-------------+-------------------------------------------------------------+--------------------------------------------------------------------|
-| function    | manager() view returns (address)                            | 0x481c6a75                                                         |
-|-------------+-------------------------------------------------------------+--------------------------------------------------------------------|
-| function    | owner() view returns (address)                              | 0x8da5cb5b                                                         |
-|-------------+-------------------------------------------------------------+--------------------------------------------------------------------|
-| function    | provider() view returns (address)                           | 0x085d4883                                                         |
-|-------------+-------------------------------------------------------------+--------------------------------------------------------------------|
-| function    | quoteFee() view returns (uint256)                           | 0x3ae9a260                                                         |
-|-------------+-------------------------------------------------------------+--------------------------------------------------------------------|
-| function    | refundRandomness(uint256) nonpayable                        | 0x1ecd1225                                                         |
-|-------------+-------------------------------------------------------------+--------------------------------------------------------------------|
-| function    | refunded(uint256) view returns (bool)                       | 0xdd533388                                                         |
-|-------------+-------------------------------------------------------------+--------------------------------------------------------------------|
-| function    | renounceOwnership() nonpayable                              | 0x715018a6                                                         |
-|-------------+-------------------------------------------------------------+--------------------------------------------------------------------|
-| function    | requestOfRound(uint256) view returns (uint64)               | 0x8205ac1f                                                         |
-|-------------+-------------------------------------------------------------+--------------------------------------------------------------------|
-| function    | requestRandomness(uint256,bytes32) payable returns (uint64) | 0x573fde08                                                         |
-|-------------+-------------------------------------------------------------+--------------------------------------------------------------------|
-| function    | roundOfRequest(uint64) view returns (uint256)               | 0xce7aea0d                                                         |
-|-------------+-------------------------------------------------------------+--------------------------------------------------------------------|
-| function    | setManager(address) nonpayable                              | 0xd0ebdbe7                                                         |
-|-------------+-------------------------------------------------------------+--------------------------------------------------------------------|
-| function    | transferOwnership(address) nonpayable                       | 0xf2fde38b                                                         |
-|-------------+-------------------------------------------------------------+--------------------------------------------------------------------|
-| constructor | constructor(address,address,uint32,address) nonpayable      |                                                                    |
-|-------------+-------------------------------------------------------------+--------------------------------------------------------------------|
-| receive     | receive() payable                                           |                                                                    |
-Ôò░-------------+-------------------------------------------------------------+--------------------------------------------------------------------Ôò»
-
+[
+  {
+    "type": "constructor",
+    "inputs": [
+      {
+        "name": "dice_",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "provider_",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "callbackGasLimit_",
+        "type": "uint32",
+        "internalType": "uint32"
+      },
+      {
+        "name": "owner_",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "receive",
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "callbackGasLimit",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint32",
+        "internalType": "uint32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "dice",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IDiceEntropy"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "entropyCallback",
+    "inputs": [
+      {
+        "name": "sequenceNumber",
+        "type": "uint64",
+        "internalType": "uint64"
+      },
+      {
+        "name": "provider_",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "random",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "feeOfRound",
+    "inputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "manager",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "owner",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "provider",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "quoteFee",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "refundRandomness",
+    "inputs": [
+      {
+        "name": "roundId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "refunded",
+    "inputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "renounceOwnership",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "requestOfRound",
+    "inputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "requestRandomness",
+    "inputs": [
+      {
+        "name": "roundId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "userRandom",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "sequenceNumber",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "roundOfRequest",
+    "inputs": [
+      {
+        "name": "",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "setManager",
+    "inputs": [
+      {
+        "name": "manager_",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "transferOwnership",
+    "inputs": [
+      {
+        "name": "newOwner",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "event",
+    "name": "ManagerSet",
+    "inputs": [
+      {
+        "name": "manager",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "OwnershipTransferred",
+    "inputs": [
+      {
+        "name": "previousOwner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "newOwner",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "RandomnessForwarded",
+    "inputs": [
+      {
+        "name": "roundId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "sequence",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "RandomnessRefunded",
+    "inputs": [
+      {
+        "name": "roundId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "sequence",
+        "type": "uint64",
+        "indexed": false,
+        "internalType": "uint64"
+      },
+      {
+        "name": "fee",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "AlreadyRefunded",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "AlreadySet",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "FeeMismatch",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotCoordinator",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotManager",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "OwnableInvalidOwner",
+    "inputs": [
+      {
+        "name": "owner",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "OwnableUnauthorizedAccount",
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "RequestExists",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "TransferFailed",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "UnknownRequest",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ZeroAddress",
+    "inputs": []
+  }
+]
