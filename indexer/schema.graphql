@@ -1,4 +1,94 @@
+type Round {
+  id: ID!
+  phase: String!
+  openedAt: BigInt!
+  closeAt: BigInt!
+  settledAt: BigInt!
+  totalEth: BigInt!
+  winningSquare: Int!
+  winningSquareEth: BigInt!
+  rolloverIn: BigInt!
+  rolloverOut: BigInt!
+  jackpotHit: Boolean!
+  jackpotPaid: BigInt!
+  randomnessRequestId: BigInt!
+  randomOutput: String!
+  roundingDust: BigInt!
+  txHash: String!
+}
+
+type SquareRound {
+  id: ID!
+  roundId: BigInt!
+  squareId: Int!
+  totalEth: BigInt!
+  minerCount: Int!
+}
+
+type SquareMiner {
+  id: ID!
+  roundId: BigInt!
+  squareId: Int!
+  wallet: String!
+}
+
+type Wallet {
+  id: ID!
+}
+
+type Entry {
+  id: ID!
+  roundId: BigInt!
+  squareId: Int!
+  wallet: String!
+  amount: BigInt!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+  txHash: String!
+}
+
+type WalletRound {
+  id: ID!
+  roundId: BigInt!
+  wallet: String!
+  deposited: BigInt!
+  ethWon: BigInt!
+  potsWon: BigInt!
+  jackpotWon: BigInt!
+  ethClaimed: BigInt!
+  potsClaimed: BigInt!
+  refunded: BigInt!
+  netEth: BigInt!
+  claimTxHashes: [String!]!
+}
+
+type Claim {
+  id: ID!
+  roundId: BigInt!
+  wallet: String!
+  kind: String!
+  amount: BigInt!
+  txHash: String!
+  timestamp: BigInt!
+}
+
+type RandomnessRequest {
+  id: ID!
+  roundId: BigInt!
+  requestedBlock: BigInt!
+  fulfilledBlock: BigInt!
+  output: String!
+  refunded: Boolean!
+}
+
 type ProtocolStats {
   id: ID!
+  totalEthCommitted: BigInt!
+  roundsCompleted: BigInt!
+  ethDistributed: BigInt!
+  potsEmitted: BigInt!
+  jackpotPaid: BigInt!
+  jackpotHits: BigInt!
+  uniqueWallets: BigInt!
   lastIndexedBlock: BigInt!
 }

@@ -8,4 +8,5 @@ AGENTS.md
 .impeccable/
 .codebase-memory/
 contracts/
-indexer/
+indexer/schema.graphql
+next-env.d.ts

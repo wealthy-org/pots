@@ -1,9 +1,26 @@
+# yaml-language-server: $schema=./node_modules/envio/evm.schema.json
 name: pots-indexer
-description: POTS events on Robinhood Chain testnet.
-networks:
+description: POTS round events on Robinhood Chain testnet
+contracts:
+  - name: PotsRoundManager
+    events:
+      - event: 'RoundOpened(uint256 indexed roundId, uint256 rolloverIn)'
+      - event: 'EntryPlaced(uint256 indexed roundId, address indexed wallet, uint8[] squareIds, uint256 amountPerSquare, uint256 total)'
+      - event: 'RoundLocked(uint256 indexed roundId, uint64 closeAt)'
+      - event: 'RandomnessRequested(uint256 indexed roundId, uint64 sequence, uint256 requestedAtBlock)'
+      - event: 'RandomnessFulfilled(uint256 indexed roundId, uint64 sequence, bytes32 output)'
+      - event: 'RandomnessRefunded(uint256 indexed roundId, uint64 sequence, uint256 fee)'
+      - event: 'RoundSettled(uint256 indexed roundId, uint8 winningSquare, uint256 totalEth, uint256 winningSquareEth, uint256 pool, uint256 rolloverOut, bool jackpotHit)'
+      - event: 'RewardAllocated(uint256 indexed roundId, address indexed wallet, uint256 eth, uint256 pots)'
+      - event: 'RewardClaimed(uint256 indexed roundId, address indexed wallet, uint8 kind, uint256 amount)'
+      - event: 'JackpotContributed(uint256 indexed roundId, uint256 amount)'
+      - event: 'JackpotPaid(uint256 indexed roundId, uint256 amount)'
+      - event: 'RoundCancelled(uint256 indexed roundId)'
+      - event: 'RefundClaimed(uint256 indexed roundId, address indexed wallet, uint256 amount)'
+address_format: lowercase
+chains:
   - id: 46630
     start_block: 0
     contracts:
       - name: PotsRoundManager
-        address:
-          - "0x0000000000000000000000000000000000000000"
+        address: '0x0000000000000000000000000000000000000000'
