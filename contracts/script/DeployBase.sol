@@ -39,7 +39,9 @@ abstract contract DeployBase is Script {
             uint32(vm.parseJsonUint(json, ".round.windowSeconds")),
             vm.parseJsonUint(json, ".jackpot.chanceDenominator"),
             vm.parseJsonUint(json, ".emission.perRoundWei"),
-            vm.parseJsonUint(json, ".randomness.refundDelayBlocks")
+            vm.parseJsonUint(json, ".randomness.refundDelayBlocks"),
+            vm.parseJsonUint(json, ".round.lockedCancelDelaySeconds"),
+            vm.parseJsonUint(json, ".round.forceCancelDelaySeconds")
         );
     }
 }

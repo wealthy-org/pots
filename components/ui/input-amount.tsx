@@ -41,7 +41,7 @@ export function InputAmount({
         {label}
       </label>
       <div
-        className={`flex h-11 items-center gap-2.5 rounded-md border bg-black/35 px-3 focus-within:border-gold/70 focus-within:ring-[3px] focus-within:ring-[rgba(232,194,122,0.08)] ${
+        className={`flex h-[46px] items-center gap-2.5 rounded-md border bg-black/35 px-3 focus-within:border-gold/70 focus-within:ring-[3px] focus-within:ring-[rgba(232,194,122,0.08)] ${
           error ? 'border-loss' : 'border-line-2'
         }`}
       >
@@ -55,7 +55,7 @@ export function InputAmount({
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
           disabled={disabled}
-          className="min-w-0 flex-1 bg-transparent font-mono text-[17px] font-semibold outline-none"
+          className="h-full min-w-0 flex-1 bg-transparent font-mono text-[17px] font-semibold outline-none"
         />
         <span className="text-xs font-medium text-text-2">ETH</span>
       </div>

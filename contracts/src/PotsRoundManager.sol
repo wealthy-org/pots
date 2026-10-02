@@ -11,6 +11,7 @@ contract PotsRoundManager is Ownable, ReentrancyGuard {
     uint256 public constant BPS_DENOMINATOR = 10_000;
     uint8 public constant CLAIM_KIND_ETH = 0;
     uint8 public constant CLAIM_KIND_POTS = 1;
+    uint256 public constant MIN_ESCAPE_DELAY = 10 minutes;
 
     enum Phase {
         NONE,
@@ -59,11 +60,15 @@ contract PotsRoundManager is Ownable, ReentrancyGuard {
     uint256 public immutable jackpotChanceDenominator;
     uint256 public immutable potEmissionPerRound;
     uint256 public immutable randomnessRefundDelayBlocks;
+    uint256 public immutable lockedCancelDelay;
+    uint256 public immutable forceCancelDelay;
 
     uint256 public currentRoundId;
     bool public paused;
 
     mapping(uint256 => Round) internal rounds;
+    mapping(uint256 => uint64) public lockedAtTime;
+    mapping(uint256 => uint64) public requestedAtTime;
     mapping(uint256 => mapping(uint8 => mapping(address => uint256))) public entries;
     mapping(uint256 => mapping(uint8 => uint256)) public squareTotals;
     mapping(uint256 => mapping(address => WalletRound)) internal walletRounds;
@@ -82,7 +87,6 @@ contract PotsRoundManager is Ownable, ReentrancyGuard {
     error AmountAboveMaximum();
     error ValueMismatch();
     error ContractPaused();
-    error UnknownRound();
     error NotLockable();
     error WrongPhase();
     error RandomnessAlreadyRequested();
@@ -93,11 +97,11 @@ contract PotsRoundManager is Ownable, ReentrancyGuard {
     error NothingToClaim();
     error AlreadyClaimed();
     error TransferFailed();
-    error EmissionExhausted();
     error Unauthorized();
     error CancelNotAllowed();
     error InsufficientTreasury();
     error ZeroAddress();
+    error InvalidDelay();
 
     event RoundOpened(uint256 indexed roundId, uint256 rolloverIn);
     event EntryPlaced(
@@ -146,12 +150,17 @@ contract PotsRoundManager is Ownable, ReentrancyGuard {
         uint32 roundWindow_,
         uint256 jackpotChanceDenominator_,
         uint256 potEmissionPerRound_,
-        uint256 randomnessRefundDelayBlocks_
+        uint256 randomnessRefundDelayBlocks_,
+        uint256 lockedCancelDelay_,
+        uint256 forceCancelDelay_
     ) Ownable(owner_) {
         if (token_ == address(0) || adapter_ == address(0)) {
             revert ZeroAddress();
         }
         require(uint256(treasuryBps_) + jackpotBps_ + payoutBps_ == BPS_DENOMINATOR, "bps");
+        if (lockedCancelDelay_ < MIN_ESCAPE_DELAY || forceCancelDelay_ < lockedCancelDelay_) {
+            revert InvalidDelay();
+        }
         token = POTSToken(token_);
         adapter = IPotsRandomnessAdapter(adapter_);
         treasuryBps = treasuryBps_;
@@ -163,6 +172,8 @@ contract PotsRoundManager is Ownable, ReentrancyGuard {
         jackpotChanceDenominator = jackpotChanceDenominator_;
         potEmissionPerRound = potEmissionPerRound_;
         randomnessRefundDelayBlocks = randomnessRefundDelayBlocks_;
+        lockedCancelDelay = lockedCancelDelay_;
+        forceCancelDelay = forceCancelDelay_;
     }
 
     modifier onlyAdapter() {
@@ -172,27 +183,35 @@ contract PotsRoundManager is Ownable, ReentrancyGuard {
         _;
     }
 
+    /// @notice Accepts ETH only from the randomness adapter (a refunded provider fee).
     receive() external payable {
         if (msg.sender != address(adapter)) {
             revert Unauthorized();
         }
     }
 
+    /// @notice Stops new entries. Claims, refunds, settlement, and cancellation stay available.
+    /// @dev Owner only.
     function pause() external onlyOwner {
         paused = true;
         emit PausedSet(true);
     }
 
+    /// @notice Resumes new entries.
+    /// @dev Owner only.
     function unpause() external onlyOwner {
         paused = false;
         emit PausedSet(false);
     }
 
+    /// @notice Adds ETH to the treasury that pays randomness fees. Anyone may call it.
     function fundTreasury() external payable {
         treasuryBalance += msg.value;
         emit TreasuryFunded(msg.sender, msg.value);
     }
 
+    /// @notice Opens the next round in WAITING, carrying the rollover balance.
+    /// @dev Permissionless. Requires the previous round to be SETTLED or CANCELLED.
     function startNextRound() external {
         uint256 previous = currentRoundId;
         if (previous != 0) {
@@ -209,6 +228,9 @@ contract PotsRoundManager is Ownable, ReentrancyGuard {
         emit RoundOpened(next, rolloverBalance);
     }
 
+    /// @notice Places the same amount on each listed square (1 to 25, no duplicates).
+    /// @dev The first entry opens the round and sets its deadline. msg.value must equal
+    /// squareIds.length * amountPerSquare. Reverts when paused or after the deadline.
     function enter(uint8[] calldata squareIds, uint256 amountPerSquare)
         external
         payable
@@ -265,6 +287,8 @@ contract PotsRoundManager is Ownable, ReentrancyGuard {
         emit EntryPlaced(roundId, msg.sender, squareIds, amountPerSquare, total);
     }
 
+    /// @notice Locks an OPEN round once its deadline has passed and records the lock time.
+    /// @dev Permissionless.
     function lock() external {
         uint256 roundId = currentRoundId;
         Round storage round = rounds[roundId];
@@ -275,9 +299,12 @@ contract PotsRoundManager is Ownable, ReentrancyGuard {
             revert NotLockable();
         }
         round.phase = Phase.LOCKED;
+        lockedAtTime[roundId] = uint64(block.timestamp);
         emit RoundLocked(roundId, round.closeAt);
     }
 
+    /// @notice Requests one random output for the LOCKED round and pays the provider fee from the treasury.
+    /// @dev Permissionless. Reverts when the treasury cannot cover the fee or the provider rejects it.
     function requestRandomness() external nonReentrant {
         uint256 roundId = currentRoundId;
         Round storage round = rounds[roundId];
@@ -297,10 +324,13 @@ contract PotsRoundManager is Ownable, ReentrancyGuard {
         uint64 sequence = adapter.requestRandomness{ value: fee }(roundId, userRandom);
         round.randomnessRequestId = sequence;
         round.requestedAtBlock = uint64(block.number);
+        requestedAtTime[roundId] = uint64(block.timestamp);
         round.phase = Phase.RANDOMNESS_PENDING;
         emit RandomnessRequested(roundId, sequence, block.number);
     }
 
+    /// @notice Stores the single accepted random output for a pending round.
+    /// @dev Callable only by the adapter. A second output for the same round reverts.
     function onRandomnessFulfilled(uint256 roundId, bytes32 output) external onlyAdapter {
         Round storage round = rounds[roundId];
         if (round.phase != Phase.RANDOMNESS_PENDING) {
@@ -313,6 +343,9 @@ contract PotsRoundManager is Ownable, ReentrancyGuard {
         emit RandomnessFulfilled(roundId, round.randomnessRequestId, output);
     }
 
+    /// @notice Settles a pending round whose output arrived: picks the winning square, splits fees,
+    /// and fixes each winner's claimable share.
+    /// @dev Permissionless. With no ETH on the winning square the payout rolls over.
     function settle(uint256 roundId) external nonReentrant {
         Round storage round = rounds[roundId];
         if (round.phase != Phase.RANDOMNESS_PENDING) {
@@ -377,6 +410,8 @@ contract PotsRoundManager is Ownable, ReentrancyGuard {
         );
     }
 
+    /// @notice Recovers the provider fee after randomnessRefundDelayBlocks blocks without an output.
+    /// @dev Permissionless. Marks the round as refunded so it can be cancelled.
     function refundRandomness(uint256 roundId) external nonReentrant {
         Round storage round = rounds[roundId];
         if (round.phase != Phase.RANDOMNESS_PENDING) {
@@ -399,16 +434,25 @@ contract PotsRoundManager is Ownable, ReentrancyGuard {
         emit RandomnessRefunded(roundId, round.randomnessRequestId, fee);
     }
 
+    /// @notice Cancels a round that cannot settle and makes every entry refundable in full.
+    /// @dev Permissionless. Allowed when the round is LOCKED for lockedCancelDelay seconds, or
+    /// PENDING without output and either refunded or forceCancelDelay seconds after the request.
     function cancelRound(uint256 roundId) external nonReentrant {
         Round storage round = rounds[roundId];
-        if (round.phase != Phase.RANDOMNESS_PENDING) {
+        if (round.phase == Phase.LOCKED) {
+            if (block.timestamp < uint256(lockedAtTime[roundId]) + lockedCancelDelay) {
+                revert CancelNotAllowed();
+            }
+        } else if (round.phase == Phase.RANDOMNESS_PENDING) {
+            if (round.randomOutput != bytes32(0)) {
+                revert AlreadySettled();
+            }
+            bool timedOut = block.timestamp >= uint256(requestedAtTime[roundId]) + forceCancelDelay;
+            if (!round.randomnessRefunded && !timedOut) {
+                revert CancelNotAllowed();
+            }
+        } else {
             revert WrongPhase();
-        }
-        if (round.randomOutput != bytes32(0)) {
-            revert AlreadySettled();
-        }
-        if (!round.randomnessRefunded) {
-            revert CancelNotAllowed();
         }
         round.phase = Phase.CANCELLED;
         totalUnsettledDeposits -= round.totalEth;
@@ -416,6 +460,8 @@ contract PotsRoundManager is Ownable, ReentrancyGuard {
         emit RoundCancelled(roundId);
     }
 
+    /// @notice Pulls the caller's ETH payout for a settled round, or the refund for a cancelled one.
+    /// @dev Sets the claimed flag before sending ETH. A failing transfer reverts only this claim.
     function claimEth(uint256 roundId) external nonReentrant {
         Round storage round = rounds[roundId];
         WalletRound storage walletRound = walletRounds[roundId][msg.sender];
@@ -456,6 +502,7 @@ contract PotsRoundManager is Ownable, ReentrancyGuard {
         }
     }
 
+    /// @notice Mints the caller's POTS share for a settled round.
     function claimPots(uint256 roundId) external nonReentrant {
         Round storage round = rounds[roundId];
         if (round.phase != Phase.SETTLED) {
@@ -479,6 +526,8 @@ contract PotsRoundManager is Ownable, ReentrancyGuard {
         token.mint(msg.sender, pots);
     }
 
+    /// @notice Withdraws accrued fees from the treasury balance.
+    /// @dev Owner only. Cannot touch deposits, unclaimed payouts, rollover, jackpot, or dust.
     function withdrawTreasury(address to, uint256 amount) external nonReentrant onlyOwner {
         if (to == address(0)) {
             revert ZeroAddress();
@@ -494,16 +543,19 @@ contract PotsRoundManager is Ownable, ReentrancyGuard {
         }
     }
 
+    /// @notice Returns all stored fields of a round.
     function getRound(uint256 roundId) external view returns (Round memory) {
         return rounds[roundId];
     }
 
+    /// @notice Returns the ETH on each of the 25 squares of a round (index 0 is square 1).
     function getSquareTotals(uint256 roundId) external view returns (uint256[25] memory totals) {
         for (uint8 square = 1; square <= MAX_SQUARES; ++square) {
             totals[square - 1] = squareTotals[roundId][square];
         }
     }
 
+    /// @notice Returns the amount a wallet placed on one square of a round.
     function getEntry(uint256 roundId, uint8 squareId, address wallet)
         external
         view
@@ -512,6 +564,7 @@ contract PotsRoundManager is Ownable, ReentrancyGuard {
         return entries[roundId][squareId][wallet];
     }
 
+    /// @notice Returns a wallet's deposit and claim flags for a round.
     function getWalletRound(uint256 roundId, address wallet)
         external
         view
@@ -520,6 +573,7 @@ contract PotsRoundManager is Ownable, ReentrancyGuard {
         return walletRounds[roundId][wallet];
     }
 
+    /// @notice Returns the ETH (or refund) and POTS a wallet can still claim for a round.
     function getClaimable(uint256 roundId, address wallet)
         external
         view
@@ -545,6 +599,7 @@ contract PotsRoundManager is Ownable, ReentrancyGuard {
         }
     }
 
+    /// @notice Returns the rollover, jackpot, and treasury balances.
     function balances()
         external
         view
@@ -553,6 +608,7 @@ contract PotsRoundManager is Ownable, ReentrancyGuard {
         return (rolloverBalance, jackpotBalance, treasuryBalance);
     }
 
+    /// @notice Returns every accounted balance that the contract's ETH must cover.
     function accounting()
         external
         view
@@ -575,9 +631,11 @@ contract PotsRoundManager is Ownable, ReentrancyGuard {
         );
     }
 
+    /// @notice True when the contract's ETH covers every accounted balance.
+    /// @dev Uses >= because ETH can be forced in, which only raises the balance.
     function invariantHolds() external view returns (bool) {
         return address(this).balance
-            == totalUnsettledDeposits + totalUnclaimedEth + rolloverBalance + jackpotBalance
+            >= totalUnsettledDeposits + totalUnclaimedEth + rolloverBalance + jackpotBalance
                 + treasuryBalance + totalDust;
     }
 }

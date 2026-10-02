@@ -29,6 +29,13 @@ contract POTSTokenTest is Test {
         token.setMinter(address(0));
     }
 
+    function test_setMinter_oneTimeOnly() public {
+        vm.prank(owner);
+        vm.expectRevert(POTSToken.AlreadySet.selector);
+        token.setMinter(alice);
+        assertEq(token.minter(), minter);
+    }
+
     function test_mint_onlyMinter() public {
         vm.expectRevert(POTSToken.Unauthorized.selector);
         token.mint(alice, 1e18);

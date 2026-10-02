@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useId, useRef, type ReactNode } from 'react'
 
 export function Modal({
   open,
@@ -14,6 +14,7 @@ export function Modal({
   children: ReactNode
 }) {
   const ref = useRef<HTMLDialogElement>(null)
+  const titleId = useId()
 
   useEffect(() => {
     const dialog = ref.current
@@ -31,6 +32,7 @@ export function Modal({
   return (
     <dialog
       ref={ref}
+      aria-labelledby={titleId}
       onCancel={(event) => {
         event.preventDefault()
         onClose()
@@ -38,7 +40,9 @@ export function Modal({
       className="m-auto w-[min(92vw,26rem)] rounded-md border border-line-2 bg-bg-elev p-0 text-text backdrop:bg-black/60"
     >
       <div className="flex items-center justify-between border-b border-line px-4 py-3">
-        <h2 className="text-sm font-semibold">{title}</h2>
+        <h2 id={titleId} className="text-sm font-semibold">
+          {title}
+        </h2>
         <button
           type="button"
           onClick={onClose}

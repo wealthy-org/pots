@@ -61,6 +61,16 @@
         "name": "randomnessRefundDelayBlocks_",
         "type": "uint256",
         "internalType": "uint256"
+      },
+      {
+        "name": "lockedCancelDelay_",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "forceCancelDelay_",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "stateMutability": "nonpayable"
@@ -111,6 +121,19 @@
   {
     "type": "function",
     "name": "MAX_SQUARES",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "MIN_ESCAPE_DELAY",
     "inputs": [],
     "outputs": [
       {
@@ -285,6 +308,19 @@
         "internalType": "address"
       }
     ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "forceCancelDelay",
+    "inputs": [],
     "outputs": [
       {
         "name": "",
@@ -581,6 +617,38 @@
   },
   {
     "type": "function",
+    "name": "lockedAtTime",
+    "inputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "lockedCancelDelay",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "maxEntryPerSquare",
     "inputs": [],
     "outputs": [
@@ -721,6 +789,25 @@
     "inputs": [],
     "outputs": [],
     "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "requestedAtTime",
+    "inputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint64",
+        "internalType": "uint64"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -1347,12 +1434,12 @@
   },
   {
     "type": "error",
-    "name": "EmissionExhausted",
+    "name": "InsufficientTreasury",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "InsufficientTreasury",
+    "name": "InvalidDelay",
     "inputs": []
   },
   {
@@ -1435,11 +1522,6 @@
   {
     "type": "error",
     "name": "Unauthorized",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "UnknownRound",
     "inputs": []
   },
   {

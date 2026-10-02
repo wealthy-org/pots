@@ -1,11 +1,13 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
+import { formatRemaining, useCountdown } from '@/hooks/use-countdown'
 import { Phase, ZERO_BYTES32, type RoundData } from '@/lib/types'
 
 export function KeeperPanel({
   roundId,
   round,
+  escapeAt,
   onLock,
   onRequestRandomness,
   onSettle,
@@ -16,6 +18,7 @@ export function KeeperPanel({
 }: {
   roundId?: bigint
   round?: RoundData
+  escapeAt?: bigint
   onLock: () => void
   onRequestRandomness: () => void
   onSettle: () => void
@@ -24,11 +27,15 @@ export function KeeperPanel({
   onStartNextRound: () => void
   isSubmitting: boolean
 }) {
+  const remaining = useCountdown(escapeAt)
+
   if (roundId === undefined) {
     return null
   }
 
   const buttons: Array<{ label: string; action: () => void }> = []
+  let escapeNote: string | null = null
+  const escapeReady = escapeAt !== undefined && remaining === 0
 
   if (!round || roundId === 0n) {
     buttons.push({ label: 'Start round 1', action: onStartNextRound })
@@ -36,12 +43,22 @@ export function KeeperPanel({
     buttons.push({ label: 'Lock round', action: onLock })
   } else if (round.phase === Phase.LOCKED) {
     buttons.push({ label: 'Request randomness', action: onRequestRandomness })
+    if (escapeReady) {
+      buttons.push({ label: 'Cancel round and refund entries', action: onCancel })
+    } else if (escapeAt !== undefined) {
+      escapeNote = `If randomness cannot be requested, anyone can cancel this round and refund every entry in ${formatRemaining(remaining)}.`
+    }
   } else if (round.phase === Phase.RANDOMNESS_PENDING) {
     if (round.randomOutput === ZERO_BYTES32) {
       if (round.randomnessRefunded) {
         buttons.push({ label: 'Cancel and refund entries', action: onCancel })
       } else {
         buttons.push({ label: 'Refund randomness fee', action: onRefund })
+        if (escapeReady) {
+          buttons.push({ label: 'Cancel and refund entries', action: onCancel })
+        } else if (escapeAt !== undefined) {
+          escapeNote = `If the randomness refund keeps failing, anyone can cancel this round and refund every entry in ${formatRemaining(remaining)}.`
+        }
       }
     } else {
       buttons.push({ label: 'Settle round', action: onSettle })
@@ -72,6 +89,7 @@ export function KeeperPanel({
           </Button>
         ))}
       </div>
+      {escapeNote ? <p className="mt-2 text-xs text-text-2">{escapeNote}</p> : null}
     </section>
   )
 }

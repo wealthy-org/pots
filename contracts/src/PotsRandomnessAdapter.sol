@@ -43,8 +43,11 @@ contract PotsRandomnessAdapter is IPotsRandomnessAdapter, IDiceConsumer, Ownable
         callbackGasLimit = callbackGasLimit_;
     }
 
+    /// @notice Accepts ETH refunded by the provider.
     receive() external payable { }
 
+    /// @notice Registers the round manager that may request and refund randomness.
+    /// @dev Owner only and one-time.
     function setManager(address manager_) external onlyOwner {
         if (manager != address(0)) {
             revert AlreadySet();
@@ -56,10 +59,13 @@ contract PotsRandomnessAdapter is IPotsRandomnessAdapter, IDiceConsumer, Ownable
         emit ManagerSet(manager_);
     }
 
+    /// @notice Returns the provider's current fee for a request with the configured callback gas.
     function quoteFee() public view returns (uint256) {
         return dice.getFeeV2(provider, callbackGasLimit);
     }
 
+    /// @notice Forwards one randomness request to the provider for a round.
+    /// @dev Manager only. One request per round; msg.value must equal the quoted fee.
     function requestRandomness(uint256 roundId, bytes32 userRandom)
         external
         payable
@@ -82,6 +88,8 @@ contract PotsRandomnessAdapter is IPotsRandomnessAdapter, IDiceConsumer, Ownable
         emit RandomnessForwarded(roundId, sequenceNumber);
     }
 
+    /// @notice Reclaims the fee of a request the provider never revealed and forwards it to the manager.
+    /// @dev Manager only. One refund per round.
     function refundRandomness(uint256 roundId) external {
         if (msg.sender != manager) {
             revert NotManager();
@@ -106,6 +114,8 @@ contract PotsRandomnessAdapter is IPotsRandomnessAdapter, IDiceConsumer, Ownable
         emit RandomnessRefunded(roundId, sequence, fee);
     }
 
+    /// @notice Receives the provider's random output and passes it to the manager.
+    /// @dev Only the configured coordinator and provider may call it; unknown requests revert.
     function entropyCallback(uint64 sequenceNumber, address provider_, bytes32 random) external {
         if (msg.sender != address(dice) || provider_ != provider) {
             revert NotCoordinator();

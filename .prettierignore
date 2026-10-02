@@ -10,3 +10,5 @@ AGENTS.md
 contracts/
 indexer/schema.graphql
 next-env.d.ts
+test-results/
+playwright-report/

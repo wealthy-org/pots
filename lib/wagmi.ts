@@ -6,7 +6,7 @@ export const wagmiConfig = createConfig({
   chains: [activeChain],
   connectors: [injected()],
   transports: {
-    [activeChain.id]: http(process.env.NEXT_PUBLIC_ROBINHOOD_RPC_URL),
+    [activeChain.id]: http(process.env.NEXT_PUBLIC_ROBINHOOD_RPC_URL, { batch: true }),
   },
   ssr: true,
 })

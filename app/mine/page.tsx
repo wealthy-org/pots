@@ -16,16 +16,18 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Toast, ToastViewport } from '@/components/ui/toast'
 import {
   useBalances,
+  useCancelWindows,
   useClaimable,
   useCurrentRoundId,
   useEntryLimits,
+  usePaused,
   useRound,
   useSquareTotals,
   useWalletRound,
 } from '@/hooks/use-round'
 import { usePotsWrites } from '@/hooks/use-pots-writes'
 import { PRESETS, type PresetName } from '@/lib/presets'
-import { Phase } from '@/lib/types'
+import { Phase, phaseLabel } from '@/lib/types'
 import type { WalletRoundData } from '@/lib/types'
 import { multiplyWei, parseEthToWei } from '@/lib/wei'
 
@@ -42,7 +44,28 @@ export default function MinePage() {
   const claimable = useClaimable(roundId, address)
   const walletRoundResult = useWalletRound(roundId, address)
   const limits = useEntryLimits()
+  const cancelWindows = useCancelWindows(roundId, round?.phase)
+  const paused = usePaused().data === true
   const writes = usePotsWrites()
+
+  let escapeAt: bigint | undefined
+  if (
+    round?.phase === Phase.LOCKED &&
+    cancelWindows.lockedCancelDelay !== undefined &&
+    cancelWindows.lockedAt
+  ) {
+    escapeAt = cancelWindows.lockedAt + cancelWindows.lockedCancelDelay
+  } else if (
+    round?.phase === Phase.RANDOMNESS_PENDING &&
+    cancelWindows.forceCancelDelay !== undefined &&
+    cancelWindows.requestedAt
+  ) {
+    escapeAt = cancelWindows.requestedAt + cancelWindows.forceCancelDelay
+  }
+  const phaseAnnouncement =
+    roundId !== undefined && roundId > 0n && round
+      ? `Round ${roundId.toString()}: ${phaseLabel(round.phase)}`
+      : ''
 
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [activePreset, setActivePreset] = useState<PresetName | null>(null)
@@ -123,7 +146,20 @@ export default function MinePage() {
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_446px] lg:items-start">
       <section aria-label="Mining grid">
+        <h1 className="sr-only">Mine</h1>
+        <p role="status" aria-live="polite" className="sr-only">
+          {phaseAnnouncement}
+        </p>
         {current.isLoading ? <Skeleton className="h-16 w-full" /> : null}
+
+        {paused ? (
+          <p
+            role="status"
+            className="mb-3 rounded-md border border-gold/40 bg-gold/10 px-4 py-2.5 text-sm"
+          >
+            New entries are paused. Claims, refunds, and settlement stay available.
+          </p>
+        ) : null}
 
         {current.isError ? (
           <EmptyState
@@ -187,6 +223,7 @@ export default function MinePage() {
             maxWei={limits.maxWei}
             round={round}
             isConnected={isConnected}
+            paused={paused}
             onConnect={() => {
               const connector = connectors[0]
               if (connector) {
@@ -211,6 +248,7 @@ export default function MinePage() {
         <KeeperPanel
           roundId={roundId}
           round={round}
+          escapeAt={escapeAt}
           onLock={() => writes.lock()}
           onRequestRandomness={() => writes.requestRandomness()}
           onSettle={() => roundId !== undefined && writes.settle(roundId)}
@@ -240,11 +278,9 @@ export default function MinePage() {
         errorMessage={writes.errorMessage}
       />
 
-      {toast ? (
-        <ToastViewport>
-          <Toast title={toast} description={writes.hash} />
-        </ToastViewport>
-      ) : null}
+      <ToastViewport>
+        {toast ? <Toast title={toast} description={writes.hash} /> : null}
+      </ToastViewport>
     </div>
   )
 }

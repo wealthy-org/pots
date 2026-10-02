@@ -25,3 +25,6 @@ AGENTS.md
 *.log
 *.tsbuildinfo
 .playwright-mcp/
+
+test-results/
+playwright-report/

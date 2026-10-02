@@ -7,6 +7,8 @@ contract MockDiceCoordinator is IDiceEntropy {
     uint256 public fee = 25_000_000_000_000;
     address public provider;
     uint64 public nextSequence = 1;
+    bool public failRequests;
+    bool public failRefunds;
 
     mapping(uint64 => address) public consumerOf;
     mapping(uint64 => bool) public refunded;
@@ -21,11 +23,20 @@ contract MockDiceCoordinator is IDiceEntropy {
         fee = fee_;
     }
 
+    function setFailRequests(bool failing) external {
+        failRequests = failing;
+    }
+
+    function setFailRefunds(bool failing) external {
+        failRefunds = failing;
+    }
+
     function getFeeV2(address, uint32) external view returns (uint256) {
         return fee;
     }
 
     function requestV2(address, bytes32, uint32) external payable returns (uint64) {
+        require(!failRequests, "MockDice: provider down");
         require(msg.value == fee, "MockDice: fee");
         uint64 sequence = nextSequence++;
         consumerOf[sequence] = msg.sender;
@@ -33,6 +44,7 @@ contract MockDiceCoordinator is IDiceEntropy {
     }
 
     function refundRequest(address, uint64 sequenceNumber) external {
+        require(!failRefunds, "MockDice: refund unavailable");
         require(consumerOf[sequenceNumber] == msg.sender, "MockDice: consumer");
         require(!refunded[sequenceNumber], "MockDice: refunded");
         refunded[sequenceNumber] = true;

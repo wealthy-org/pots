@@ -14,7 +14,9 @@
     "maxPerSquareWei": "1000000000000000000"
   },
   "round": {
-    "windowSeconds": 60
+    "windowSeconds": 60,
+    "lockedCancelDelaySeconds": 3600,
+    "forceCancelDelaySeconds": 86400
   },
   "jackpot": {
     "chanceDenominator": 625

@@ -1,15 +1,14 @@
 'use client'
 
-import { useAccount, useChainId, useSwitchChain } from 'wagmi'
+import { useAccount, useSwitchChain } from 'wagmi'
 import { Button } from '@/components/ui/button'
 import { activeChain } from '@/lib/chains'
 
 export function NetworkBanner() {
-  const { isConnected } = useAccount()
-  const chainId = useChainId()
+  const { isConnected, chainId: walletChainId } = useAccount()
   const { switchChain, isPending } = useSwitchChain()
 
-  if (!isConnected || chainId === activeChain.id) {
+  if (!isConnected || walletChainId === undefined || walletChainId === activeChain.id) {
     return null
   }
 

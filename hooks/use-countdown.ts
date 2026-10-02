@@ -21,3 +21,12 @@ export function formatCountdown(seconds: number): string {
   const rest = seconds % 60
   return `${String(minutes).padStart(2, '0')}:${String(rest).padStart(2, '0')}`
 }
+
+export function formatRemaining(seconds: number): string {
+  if (seconds >= 3600) {
+    const hours = Math.floor(seconds / 3600)
+    const minutes = Math.floor((seconds % 3600) / 60)
+    return `${hours}h ${String(minutes).padStart(2, '0')}m`
+  }
+  return formatCountdown(seconds)
+}

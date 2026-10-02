@@ -20,16 +20,23 @@ npm run dev
 
 ## Scripts
 
-| Command                | Purpose                    |
-| ---------------------- | -------------------------- |
-| `npm run dev`          | Development server         |
-| `npm run build`        | Production build           |
-| `npm start`            | Serve the production build |
-| `npm run lint`         | ESLint                     |
-| `npm run typecheck`    | TypeScript check           |
-| `npm test`             | Vitest                     |
-| `npm run format`       | Prettier write             |
-| `npm run format:check` | Prettier check             |
+| Command                         | Purpose                                                                                                               |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `npm run dev`                   | Development server                                                                                                    |
+| `npm run build`                 | Production build                                                                                                      |
+| `npm start`                     | Serve the production build                                                                                            |
+| `npm run lint`                  | ESLint                                                                                                                |
+| `npm run typecheck`             | TypeScript check                                                                                                      |
+| `npm test`                      | Vitest                                                                                                                |
+| `npm run e2e`                   | Playwright suite on a local Anvil chain                                                                               |
+| `npm run e2e:testnet`           | Playwright suite on testnet (read-only checks; the funded rehearsal needs `E2E_PLAYER_KEY` and `E2E_MANAGER_ADDRESS`) |
+| `node scripts/health-check.mjs` | Indexer lag, settlement, treasury, and ETH invariant checks (exit 0, 1, or 2)                                         |
+| `npm run format`                | Prettier write                                                                                                        |
+| `npm run format:check`          | Prettier check                                                                                                        |
+
+## End-to-end tests
+
+`npm run e2e` starts its own Anvil on port 8599, deploys the local contracts, and starts the app on port 3217, so those ports must be free. It needs Foundry in `~/.foundry/bin` (or `FOUNDRY_BIN`) and Microsoft Edge. The wallet is a mock injected provider that signs with Anvil's public development keys, so no real funds are involved.
 
 ## Contracts
 

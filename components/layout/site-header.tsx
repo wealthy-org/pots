@@ -12,7 +12,7 @@ export function SiteHeader() {
     <header className="sticky top-0 z-40 flex h-16 items-center gap-3 border-b border-line bg-bg/80 px-4 backdrop-blur-md">
       <Link
         href="/mine"
-        className="flex items-center gap-2.5 text-[15px] font-bold tracking-[0.06em]"
+        className="flex min-h-11 items-center gap-2.5 text-[15px] font-bold tracking-[0.06em]"
         aria-label="POTS home"
       >
         <span

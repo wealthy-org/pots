@@ -14,7 +14,9 @@
     "maxPerSquareWei": "1000000000000000000"
   },
   "round": {
-    "windowSeconds": 60
+    "windowSeconds": 60,
+    "lockedCancelDelaySeconds": 3600,
+    "forceCancelDelaySeconds": 86400
   },
   "jackpot": {
     "chanceDenominator": 625
@@ -32,6 +34,7 @@
     "token.symbol: final symbol pending owner confirmation (D-02)",
     "token.cap: pending owner decision (D-02)",
     "entry.maxPerSquareWei: provisional testnet value; D-01 open",
-    "emission.perRoundWei: 1 POTS per eligible round approved; reserve or mint model pending (D-02)"
+    "emission.perRoundWei: 1 POTS per eligible round approved; reserve or mint model pending (D-02)",
+    "round.lockedCancelDelaySeconds and round.forceCancelDelaySeconds: provisional escape delays for a stuck round (L-101, L-102); owner to confirm"
   ]
 }

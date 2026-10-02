@@ -18,6 +18,7 @@ export function SelectionPanel({
   maxWei,
   round,
   isConnected,
+  paused,
   onConnect,
   onReview,
 }: {
@@ -30,6 +31,7 @@ export function SelectionPanel({
   maxWei?: bigint
   round?: RoundData
   isConnected: boolean
+  paused: boolean
   onConnect: () => void
   onReview: () => void
 }) {
@@ -43,10 +45,12 @@ export function SelectionPanel({
 
   const phaseAllowsEntry =
     round?.phase === Phase.OPEN || round?.phase === Phase.WAITING || round === undefined
-  const canReview = isConnected && count > 0 && amountValid && phaseAllowsEntry
+  const canReview = isConnected && count > 0 && amountValid && phaseAllowsEntry && !paused
 
   let disabledReason: string | null = null
-  if (count === 0) {
+  if (paused) {
+    disabledReason = 'New entries are paused'
+  } else if (count === 0) {
     disabledReason = 'Select at least one square'
   } else if (!amountValid) {
     disabledReason = 'Enter a valid amount within the limits'

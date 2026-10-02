@@ -2,7 +2,7 @@
 
 import { useReadContract } from 'wagmi'
 import { managerAddress, roundManagerAbi } from '@/lib/contracts'
-import type { RoundData, WalletRoundData } from '@/lib/types'
+import { Phase, type RoundData, type WalletRoundData } from '@/lib/types'
 
 const refetchInterval = 5000
 
@@ -64,6 +64,52 @@ export function useWalletRound(roundId: bigint | undefined, wallet?: `0x${string
     query: { refetchInterval, enabled: roundId !== undefined && wallet !== undefined },
   })
   return { ...result, walletRound: result.data as unknown as WalletRoundData | undefined }
+}
+
+export function usePaused() {
+  return useReadContract({
+    address: managerAddress,
+    abi: roundManagerAbi,
+    functionName: 'paused',
+    query: { refetchInterval },
+  })
+}
+
+export function useCancelWindows(roundId: bigint | undefined, phase: number | undefined) {
+  const locked = phase === Phase.LOCKED
+  const pending = phase === Phase.RANDOMNESS_PENDING
+  const lockedDelay = useReadContract({
+    address: managerAddress,
+    abi: roundManagerAbi,
+    functionName: 'lockedCancelDelay',
+    query: { enabled: locked },
+  })
+  const forceDelay = useReadContract({
+    address: managerAddress,
+    abi: roundManagerAbi,
+    functionName: 'forceCancelDelay',
+    query: { enabled: pending },
+  })
+  const lockedAt = useReadContract({
+    address: managerAddress,
+    abi: roundManagerAbi,
+    functionName: 'lockedAtTime',
+    args: roundId !== undefined ? [roundId] : undefined,
+    query: { enabled: roundId !== undefined && locked },
+  })
+  const requestedAt = useReadContract({
+    address: managerAddress,
+    abi: roundManagerAbi,
+    functionName: 'requestedAtTime',
+    args: roundId !== undefined ? [roundId] : undefined,
+    query: { enabled: roundId !== undefined && pending },
+  })
+  return {
+    lockedCancelDelay: lockedDelay.data as bigint | undefined,
+    forceCancelDelay: forceDelay.data as bigint | undefined,
+    lockedAt: lockedAt.data as bigint | undefined,
+    requestedAt: requestedAt.data as bigint | undefined,
+  }
 }
 
 export function useEntryLimits() {

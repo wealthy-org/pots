@@ -33,7 +33,9 @@ contract AccountingHandler is Test {
             WINDOW,
             625,
             1e18,
-            REFUND_DELAY
+            REFUND_DELAY,
+            1 hours,
+            1 days
         );
         token.setMinter(address(manager));
         adapter.setManager(address(manager));
@@ -128,6 +130,29 @@ contract AccountingHandler is Test {
         vm.roll(round.requestedAtBlock + REFUND_DELAY);
         manager.refundRandomness(roundId);
         manager.cancelRound(roundId);
+    }
+
+    function abandonCurrentRound(uint8 mode) external {
+        uint256 roundId = manager.currentRoundId();
+        if (roundId == 0) {
+            return;
+        }
+        if (manager.getRound(roundId).phase != PotsRoundManager.Phase.OPEN) {
+            return;
+        }
+        vm.warp(block.timestamp + WINDOW + 1);
+        manager.lock();
+        if (mode % 2 == 1) {
+            if (manager.treasuryBalance() < dice.fee()) {
+                manager.fundTreasury{ value: 1 ether }();
+            }
+            manager.requestRandomness();
+            vm.warp(block.timestamp + 1 days);
+        } else {
+            vm.warp(block.timestamp + 1 hours);
+        }
+        manager.cancelRound(roundId);
+        manager.startNextRound();
     }
 }
 

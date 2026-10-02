@@ -11,6 +11,7 @@ contract POTSToken is ERC20, Ownable {
     error Unauthorized();
     error CapExceeded();
     error ZeroAddress();
+    error AlreadySet();
 
     event MinterSet(address indexed minter);
 
@@ -21,14 +22,21 @@ contract POTSToken is ERC20, Ownable {
         cap = cap_;
     }
 
+    /// @notice Sets the only address allowed to mint.
+    /// @dev Owner only and one-time, so minting can never be re-pointed after wiring.
     function setMinter(address minter_) external onlyOwner {
         if (minter_ == address(0)) {
             revert ZeroAddress();
+        }
+        if (minter != address(0)) {
+            revert AlreadySet();
         }
         minter = minter_;
         emit MinterSet(minter_);
     }
 
+    /// @notice Mints POTS to an address, up to the cap.
+    /// @dev Minter only.
     function mint(address to, uint256 amount) external {
         if (msg.sender != minter) {
             revert Unauthorized();

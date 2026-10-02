@@ -27,6 +27,8 @@ contract PotsTestBase is Test {
     uint256 internal constant JACKPOT_DENOM = 625;
     uint256 internal constant EMISSION = 1e18;
     uint256 internal constant REFUND_DELAY = 6;
+    uint256 internal constant LOCKED_CANCEL_DELAY = 1 hours;
+    uint256 internal constant FORCE_CANCEL_DELAY = 1 days;
     address internal constant DICE_PROVIDER = address(0xD1CE);
 
     address internal owner = makeAddr("owner");
@@ -58,7 +60,9 @@ contract PotsTestBase is Test {
             WINDOW,
             JACKPOT_DENOM,
             EMISSION,
-            REFUND_DELAY
+            REFUND_DELAY,
+            LOCKED_CANCEL_DELAY,
+            FORCE_CANCEL_DELAY
         );
         vm.startPrank(owner);
         token.setMinter(address(manager));
