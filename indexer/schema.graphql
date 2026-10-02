@@ -1,0 +1,4 @@
+type ProtocolStats {
+  id: ID!
+  lastIndexedBlock: BigInt!
+}

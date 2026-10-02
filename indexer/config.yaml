@@ -1,0 +1,9 @@
+name: pots-indexer
+description: POTS events on Robinhood Chain testnet.
+networks:
+  - id: 46630
+    start_block: 0
+    contracts:
+      - name: PotsRoundManager
+        address:
+          - "0x0000000000000000000000000000000000000000"

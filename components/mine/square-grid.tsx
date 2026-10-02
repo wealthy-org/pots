@@ -1,0 +1,71 @@
+'use client'
+
+import { useRef, useState, type KeyboardEvent } from 'react'
+import { GridCell, type GridCellData } from './grid-cell'
+
+const COLUMNS = 5
+
+export function SquareGrid({
+  cells,
+  disabled,
+  onToggle,
+}: {
+  cells: GridCellData[]
+  disabled?: boolean
+  onToggle?: (id: number) => void
+}) {
+  const [activeIndex, setActiveIndex] = useState(0)
+  const refs = useRef<Array<HTMLButtonElement | null>>([])
+
+  function handleKeyDown(event: KeyboardEvent<HTMLButtonElement>, index: number) {
+    let next = index
+    switch (event.key) {
+      case 'ArrowRight':
+        next = Math.min(cells.length - 1, index + 1)
+        break
+      case 'ArrowLeft':
+        next = Math.max(0, index - 1)
+        break
+      case 'ArrowDown':
+        next = Math.min(cells.length - 1, index + COLUMNS)
+        break
+      case 'ArrowUp':
+        next = Math.max(0, index - COLUMNS)
+        break
+      case 'Home':
+        next = 0
+        break
+      case 'End':
+        next = cells.length - 1
+        break
+      default:
+        return
+    }
+    event.preventDefault()
+    setActiveIndex(next)
+    refs.current[next]?.focus()
+  }
+
+  return (
+    <div
+      role="group"
+      aria-label="5 by 5 mining grid"
+      className="grid grid-cols-5 gap-2 max-md:gap-[5px]"
+    >
+      {cells.map((cell, index) => (
+        <GridCell
+          key={cell.id}
+          {...cell}
+          disabled={disabled}
+          tabIndex={index === activeIndex ? 0 : -1}
+          onToggle={onToggle}
+          onFocus={() => setActiveIndex(index)}
+          onKeyDown={(event) => handleKeyDown(event, index)}
+          buttonRef={(element) => {
+            refs.current[index] = element
+          }}
+        />
+      ))}
+    </div>
+  )
+}

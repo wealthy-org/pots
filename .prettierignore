@@ -1,0 +1,11 @@
+node_modules/
+.next/
+pnpm-lock.yaml
+project-context/
+AGENTS.md
+.opencode/
+.agents/
+.impeccable/
+.codebase-memory/
+contracts/
+indexer/

@@ -1,0 +1,17 @@
+{
+  "name": "pots-indexer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "envio dev",
+    "codegen": "envio codegen",
+    "start": "envio start"
+  },
+  "dependencies": {
+    "envio": "3.12.1"
+  }
+}

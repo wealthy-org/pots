@@ -1,0 +1,87 @@
+@import 'tailwindcss';
+
+:root {
+  --bg: #08080b;
+  --bg-elev: #0d0e12;
+  --cell: #101115;
+  --cell-2: #0c0d10;
+  --line: rgba(255, 255, 255, 0.09);
+  --line-2: rgba(255, 255, 255, 0.16);
+  --text: #f5f5f5;
+  --text-2: #8f929b;
+  --text-3: #9aa0aa;
+  --gold-1: #f7e2ad;
+  --gold-2: #e6bd6c;
+  --gold-3: #b98838;
+  --gold: #e8c27a;
+  --gold-ink: #1a1307;
+  --mark-1: #2a2317;
+  --mark-2: #14110b;
+  --live: #4ade80;
+  --loss: #f87171;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-elev: var(--bg-elev);
+  --color-cell: var(--cell);
+  --color-cell-2: var(--cell-2);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-text: var(--text);
+  --color-text-2: var(--text-2);
+  --color-text-3: var(--text-3);
+  --color-gold-1: var(--gold-1);
+  --color-gold-2: var(--gold-2);
+  --color-gold-3: var(--gold-3);
+  --color-gold: var(--gold);
+  --color-gold-ink: var(--gold-ink);
+  --color-mark-1: var(--mark-1);
+  --color-mark-2: var(--mark-2);
+  --color-live: var(--live);
+  --color-loss: var(--loss);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+body {
+  min-height: 100vh;
+  overflow-x: hidden;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    1100px 500px at 78% -220px,
+    rgba(232, 194, 122, 0.07),
+    transparent 70%
+  );
+}
+
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
