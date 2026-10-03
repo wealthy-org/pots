@@ -66,7 +66,7 @@ test.describe('testnet rehearsal (needs a funded account and a deployed contract
     // The provider delivers the output; a missing reveal is handled by the refund path instead.
     await expect(keeperButton(page, 'Settle round')).toBeVisible({ timeout: 10 * MINUTE })
     await keeperButton(page, 'Settle round').click()
-    await expect(page.getByText('Winning square')).toBeVisible()
+    await expect(page.getByText(/^Winning square #\d+/)).toBeVisible()
 
     const claimEth = keeperButton(page, /^Claim [\d.]+ ETH$/)
     if (await claimEth.isVisible()) {

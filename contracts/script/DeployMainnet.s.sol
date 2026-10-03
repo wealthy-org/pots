@@ -29,7 +29,7 @@ contract DeployMainnet is DeployBase {
     function run() external {
         Plan memory plan = _preflight();
 
-        vm.startBroadcast();
+        _startBroadcast();
         address deployer = msg.sender;
         POTSToken token = _deployToken(plan.json, deployer);
         PotsRandomnessAdapter adapter = _deployAdapter(plan.json, plan.coordinator, deployer);
@@ -42,7 +42,7 @@ contract DeployMainnet is DeployBase {
         if (plan.seed > 0) {
             manager.fundTreasury{ value: plan.seed }();
         }
-        vm.stopBroadcast();
+        _stopBroadcast();
 
         _assertDeployment(plan, token, adapter, manager);
 
@@ -55,14 +55,32 @@ contract DeployMainnet is DeployBase {
         );
     }
 
+    /// @dev Read from the environment; a test harness overrides both so it does not depend on
+    /// process-wide environment variables, which Foundry tests share when they run in parallel.
+    function _ownerInput() internal view virtual returns (address) {
+        return vm.envAddress("MAINNET_OWNER");
+    }
+
+    function _seedInput() internal view virtual returns (uint256) {
+        return vm.envOr("MAINNET_TREASURY_SEED_WEI", uint256(0));
+    }
+
+    function _startBroadcast() internal virtual {
+        vm.startBroadcast();
+    }
+
+    function _stopBroadcast() internal virtual {
+        vm.stopBroadcast();
+    }
+
     function _preflight() internal view returns (Plan memory plan) {
         require(block.chainid == MAINNET_CHAIN_ID, "DeployMainnet: not chain 4663");
         plan.json = vm.readFile("script/params.mainnet.json");
         plan.coordinator = vm.parseJsonAddress(plan.json, ".randomness.diceCoordinator");
         plan.provider = vm.parseJsonAddress(plan.json, ".randomness.diceProvider");
         plan.callbackGas = uint32(vm.parseJsonUint(plan.json, ".randomness.callbackGasLimit"));
-        plan.multisig = vm.envAddress("MAINNET_OWNER");
-        plan.seed = vm.envOr("MAINNET_TREASURY_SEED_WEI", uint256(0));
+        plan.multisig = _ownerInput();
+        plan.seed = _seedInput();
 
         require(plan.multisig != address(0), "DeployMainnet: owner is zero");
         require(plan.multisig != msg.sender, "DeployMainnet: owner must not be the deployer");
