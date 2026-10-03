@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures'
-import { connect, enterThroughUi, keeperButton } from '../support/ui'
+import { connect, enterThroughUi, keeperButton, openMine, openOps } from '../support/ui'
 import {
   PLAYER_ADDRESS,
   dice,
@@ -8,6 +8,7 @@ import {
   manager,
   potsBalance,
   publicClient,
+  waitForRandomnessRequest,
 } from '../support/chain'
 
 test.describe('settlement and claims', () => {
@@ -20,16 +21,26 @@ test.describe('settlement and claims', () => {
     await enterThroughUi(page, [5], '0.01')
 
     await increaseTime(61)
+    await openOps(page)
     await keeperButton(page, 'Lock round').click()
     await keeperButton(page, 'Request randomness').click()
+    await openMine(page)
     await expect(page.getByRole('heading', { name: 'Randomness pending' })).toBeVisible()
 
-    const round = (await manager.read('getRound', [1n])) as { randomnessRequestId: bigint }
-    await dice.fulfill(round.randomnessRequestId, findOutput(5))
+    await dice.fulfill(await waitForRandomnessRequest(1n), findOutput(5))
+    await openOps(page)
     await keeperButton(page, 'Settle round').click()
+    await openMine(page)
 
-    await expect(page.getByText(/^Winning square #5/)).toBeVisible()
+    await expect(page.getByText(/^Winning block #5/)).toBeVisible()
+    // The winners list marks the connected wallet and shows its claim state.
+    const winners = page.getByRole('region', { name: 'Recent winners' })
+    await expect(winners.getByText('you', { exact: true })).toBeVisible()
+    await expect(winners.getByText('claim ready')).toBeVisible()
+    // The primary button claims; the POTS claim stays available on its own (ADR-014, D-29).
+    await expect(keeperButton(page, /^Claim [\d.]+ POTS$/)).toBeVisible()
     await keeperButton(page, /^Claim [\d.]+ ETH$/).click()
+    await expect(page.getByText('Claim confirmed')).toBeVisible()
     await expect(keeperButton(page, /^Claim [\d.]+ ETH$/)).toBeHidden()
     await keeperButton(page, /^Claim [\d.]+ POTS$/).click()
     await expect(keeperButton(page, /^Claim [\d.]+ POTS$/)).toBeHidden()
@@ -49,13 +60,15 @@ test.describe('settlement and claims', () => {
     await enterThroughUi(page, [5], '0.01')
 
     await increaseTime(61)
+    await openOps(page)
     await keeperButton(page, 'Lock round').click()
     await keeperButton(page, 'Request randomness').click()
-    const round = (await manager.read('getRound', [1n])) as { randomnessRequestId: bigint }
-    await dice.fulfill(round.randomnessRequestId, findOutput(21))
+    await dice.fulfill(await waitForRandomnessRequest(1n), findOutput(21))
+    await openOps(page)
     await keeperButton(page, 'Settle round').click()
+    await openMine(page)
 
-    await expect(page.getByText(/^Winning square #21/)).toBeVisible()
+    await expect(page.getByText(/^Winning block #21/)).toBeVisible()
     await expect(page.getByText('No claimable reward for this wallet in this round.')).toBeVisible()
   })
 
@@ -66,12 +79,15 @@ test.describe('settlement and claims', () => {
     await enterThroughUi(page, [5], '0.01')
 
     await increaseTime(61)
+    await openOps(page)
     await keeperButton(page, 'Lock round').click()
     await keeperButton(page, 'Request randomness').click()
-    const round = (await manager.read('getRound', [1n])) as { randomnessRequestId: bigint }
-    await dice.fulfill(round.randomnessRequestId, findOutput(12))
+    await dice.fulfill(await waitForRandomnessRequest(1n), findOutput(12))
+    await openOps(page)
     await keeperButton(page, 'Settle round').click()
-    await keeperButton(page, 'Start next round').click()
+    await openMine(page)
+    // No start button exists: the next entry starts round 2 itself (ADR-014).
+    await enterThroughUi(page, [7], '0.001')
 
     await expect(page.getByText(/Round #?2/).first()).toBeVisible()
     const [rollover] = (await manager.read('balances')) as [bigint, bigint, bigint]

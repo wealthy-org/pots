@@ -249,6 +249,43 @@ describe('indexer client', () => {
     await expect(mod.queryIndexer('{ x }')).rejects.toMatchObject({ kind: 'terminal' })
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
+
+  it('counts distinct miners per round and drops the count at the row cap', async () => {
+    const mod = await loadIndexer()
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        data: {
+          SquareRound: [
+            { squareId: 3, totalEth: '2000000000000000', minerCount: 2 },
+            { squareId: 26, totalEth: '5', minerCount: 1 },
+          ],
+          SquareMiner: [{ wallet: '0xa' }, { wallet: '0xb' }, { wallet: '0xa' }],
+        },
+      }),
+    )
+    const result = await mod.fetchRoundMiners(7n)
+    expect(result.perBlock[2]).toEqual({ total: 2000000000000000n, miners: 2 })
+    expect(result.perBlock.filter((entry) => entry !== null)).toHaveLength(1)
+    expect(result.miners).toBe(2)
+
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        data: {
+          SquareRound: [],
+          SquareMiner: Array.from({ length: 1000 }, (_, index) => ({ wallet: `0x${index}` })),
+        },
+      }),
+    )
+    expect((await mod.fetchRoundMiners(7n)).miners).toBeNull()
+  })
+
+  it('reads the latest jackpot round, or null when none happened', async () => {
+    const mod = await loadIndexer()
+    fetchMock.mockResolvedValueOnce(jsonResponse({ data: { Round: [{ id: '42' }] } }))
+    expect(await mod.fetchLastJackpotRound()).toBe(42n)
+    fetchMock.mockResolvedValueOnce(jsonResponse({ data: { Round: [] } }))
+    expect(await mod.fetchLastJackpotRound()).toBeNull()
+  })
 })
 
 describe('isIndexerStale', () => {

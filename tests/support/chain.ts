@@ -23,6 +23,10 @@ export const OWNER_KEY: Hex = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5ef
 export const PLAYER_KEY: Hex = '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d'
 export const PLAYER_ADDRESS: Address = privateKeyToAccount(PLAYER_KEY).address
 
+// Anvil development account 2 acts as the keeper in the local suite; the secret is a test value.
+export const KEEPER_KEY: Hex = '0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a'
+export const KEEPER_SECRET = 'e2e-keeper-secret-0123456789abcdef0123456789'
+
 const diceAbi = parseAbi([
   'function fulfill(uint64 sequenceNumber, bytes32 random)',
   'function setFailRequests(bool failing)',
@@ -146,4 +150,31 @@ export function findOutput(square: number): Hex {
     }
   }
   throw new Error(`No output found for square ${square}`)
+}
+
+/** Waits until the randomness request of a round is mined and returns its sequence number. */
+export async function waitForRandomnessRequest(roundId: bigint): Promise<bigint> {
+  for (let attempt = 0; attempt < 80; attempt += 1) {
+    const round = (await manager.read('getRound', [roundId])) as {
+      phase: number
+      randomnessRequestId: bigint
+    }
+    if (round.phase === 4) {
+      return round.randomnessRequestId
+    }
+    await new Promise((resolve) => setTimeout(resolve, 250))
+  }
+  throw new Error('the randomness request was never mined')
+}
+
+export async function ownerEnter(squares: number[], amountPerSquare: bigint): Promise<void> {
+  const hash = await ownerWallet.writeContract({
+    address: MANAGER,
+    abi: managerAbi as never,
+    functionName: 'enter' as never,
+    args: [squares, amountPerSquare] as never,
+    value: amountPerSquare * BigInt(squares.length),
+    chain: null,
+  })
+  await publicClient.waitForTransactionReceipt({ hash })
 }

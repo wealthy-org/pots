@@ -33,9 +33,9 @@ test.describe('accessibility regressions (360 px)', () => {
     await page.goto('/mine')
     await connect(page)
     await selectSquares(page, [3])
-    await page.getByRole('button', { name: /^Review entry/ }).click()
+    await page.getByRole('button', { name: /^MINE/ }).click()
 
-    await expect(page.getByRole('dialog', { name: 'Review entry' })).toBeVisible()
+    await expect(page.getByRole('dialog', { name: 'Review deploy' })).toBeVisible()
   })
 
   test('no element extends past the viewport on any page', async ({ page, installWallet }) => {

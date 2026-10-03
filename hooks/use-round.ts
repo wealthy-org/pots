@@ -128,3 +128,13 @@ export function useEntryLimits() {
     maxWei: max.data as bigint | undefined,
   }
 }
+
+/** Round window in seconds, read from the contract (60 on mainnet). Used for the timer scale. */
+export function useRoundWindow() {
+  const result = useReadContract({
+    address: managerAddress,
+    abi: roundManagerAbi,
+    functionName: 'roundWindow',
+  })
+  return result.data !== undefined ? Number(result.data as number | bigint) : undefined
+}

@@ -2,6 +2,7 @@
 
 import { useReadContract } from 'wagmi'
 import { DataSource } from '@/components/ui/data-source'
+import { LeadStat } from '@/components/ui/lead-stat'
 import { Panel } from '@/components/ui/panel'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useProtocolStats } from '@/hooks/use-protocol-stats'
@@ -47,11 +48,11 @@ export default function StatsPage() {
 
       {data ? (
         <Panel>
-          <dl className="grid gap-4 text-sm sm:grid-cols-3">
-            <Stat
-              label="Total ETH committed"
-              value={`${formatWeiToEth(data.stats.totalCommitted, 5)} ETH`}
-            />
+          <LeadStat
+            label="Total ETH committed"
+            value={`${formatWeiToEth(data.stats.totalCommitted, 5)} ETH`}
+          />
+          <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-3">
             <Stat label="Rounds completed" value={data.stats.rounds.toString()} />
             <Stat
               label="ETH distributed"
@@ -77,7 +78,7 @@ export default function StatsPage() {
 function Stat({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
     <div>
-      <dt className="text-[10px] font-semibold tracking-[0.14em] text-text-3 uppercase">{label}</dt>
+      <dt className="text-[11px] font-semibold tracking-[0.16em] text-text-3 uppercase">{label}</dt>
       <dd className="mt-0.5 font-mono text-base font-semibold">{value}</dd>
       {note ? <dd className="text-xs text-text-2">{note}</dd> : null}
     </div>

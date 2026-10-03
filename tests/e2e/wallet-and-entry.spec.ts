@@ -13,6 +13,7 @@ test.describe('wallet and entry', () => {
       .getByRole('banner')
       .getByRole('button', { name: /^0x7099/ })
       .click()
+    await page.getByRole('button', { name: 'Disconnect' }).click()
     await expect(
       page.getByRole('banner').getByRole('button', { name: 'Connect wallet' }),
     ).toBeVisible()
@@ -39,15 +40,15 @@ test.describe('wallet and entry', () => {
     await selectSquares(page, [3])
     await setAmount(page, '0.01')
 
-    await page.getByRole('button', { name: /^Review entry/ }).click()
-    const dialog = page.getByRole('dialog', { name: 'Review entry' })
+    await page.getByRole('button', { name: /^MINE/ }).click()
+    const dialog = page.getByRole('dialog', { name: 'Review deploy' })
     await setWalletMode(page, 'reject')
     await dialog.getByRole('button', { name: 'Confirm in wallet' }).click()
 
     await expect(dialog.getByRole('alert')).toHaveText('Signature rejected in the wallet.')
     await expect(dialog).toBeVisible()
     await dialog.getByRole('button', { name: 'Cancel' }).click()
-    await expect(page.getByText('1/25')).toBeVisible()
+    await expect(page.getByText('1/25').first()).toBeVisible()
   })
 
   test('enters a round through the review modal', async ({ page, installWallet }) => {
@@ -58,15 +59,15 @@ test.describe('wallet and entry', () => {
     await setAmount(page, '0.01')
 
     const dialog = await (async () => {
-      await page.getByRole('button', { name: /^Review entry/ }).click()
-      return page.getByRole('dialog', { name: 'Review entry' })
+      await page.getByRole('button', { name: /^MINE/ }).click()
+      return page.getByRole('dialog', { name: 'Review deploy' })
     })()
     await expect(dialog.getByText('0.02 ETH').first()).toBeVisible()
     await expect(dialog.getByText('3, 7')).toBeVisible()
     await dialog.getByRole('button', { name: 'Confirm in wallet' }).click()
 
-    await expect(page.getByText('Entry confirmed')).toBeVisible()
-    await expect(page.getByText('Your entry this round: 0.02 ETH')).toBeVisible()
+    await expect(page.getByText('Deployed', { exact: true })).toBeVisible()
+    await expect(page.getByText('Your deploy this round: 0.02 ETH')).toBeVisible()
     await expect(square(page, 3)).toHaveAccessibleName(/0\.01 ETH deployed/)
   })
 
@@ -75,8 +76,8 @@ test.describe('wallet and entry', () => {
     await page.goto('/mine')
     await connect(page)
     await selectSquares(page, [1])
-    await page.getByRole('button', { name: /^Review entry/ }).click()
-    const dialog = page.getByRole('dialog', { name: 'Review entry' })
+    await page.getByRole('button', { name: /^MINE/ }).click()
+    const dialog = page.getByRole('dialog', { name: 'Review deploy' })
     await expect(dialog).toBeVisible()
     await page.keyboard.press('Escape')
     await expect(dialog).toBeHidden()
@@ -105,11 +106,11 @@ test.describe('wallet and entry', () => {
     await connect(page)
 
     await expect(
-      page.getByRole('status').filter({ hasText: 'New entries are paused' }),
+      page.getByRole('status').filter({ hasText: 'New deploys are paused' }),
     ).toBeVisible()
     await selectSquares(page, [2])
-    await expect(page.getByRole('button', { name: /^Review entry/ })).toBeDisabled()
-    await expect(page.getByText('New entries are paused', { exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: /^MINE/ })).toBeDisabled()
+    await expect(page.getByText('New deploys are paused', { exact: true })).toBeVisible()
   })
 
   test('entering through the helper keeps the entry visible after a reload', async ({
@@ -122,6 +123,6 @@ test.describe('wallet and entry', () => {
     await enterThroughUi(page, [9], '0.005')
     await page.reload()
     await connect(page)
-    await expect(page.getByText('Your entry this round: 0.005 ETH')).toBeVisible()
+    await expect(page.getByText('Your deploy this round: 0.005 ETH')).toBeVisible()
   })
 })

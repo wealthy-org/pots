@@ -29,7 +29,7 @@ export function ConfigNotice() {
         ))}
       </ul>
       <p className="mt-1 text-xs text-text-2">
-        Contract reads and entries will fail until this is fixed.
+        Contract reads and deploys will fail until this is fixed.
       </p>
     </div>
   )

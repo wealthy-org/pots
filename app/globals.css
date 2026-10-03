@@ -7,9 +7,10 @@
   --cell-2: #0c0d10;
   --line: rgba(255, 255, 255, 0.09);
   --line-2: rgba(255, 255, 255, 0.16);
+  color-scheme: dark;
   --text: #f5f5f5;
-  --text-2: #8f929b;
-  --text-3: #9aa0aa;
+  --text-2: #9aa0aa;
+  --text-3: #8f929b;
   --gold-1: #f7e2ad;
   --gold-2: #e6bd6c;
   --gold-3: #b98838;
@@ -19,6 +20,39 @@
   --mark-2: #14110b;
   --live: #4ade80;
   --loss: #f87171;
+}
+
+/* Mine layout: one column on phones in reading order, two columns from lg. */
+.mine-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+@media (min-width: 1024px) {
+  .mine-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 446px;
+    grid-template-rows: max-content minmax(0, 1fr) max-content;
+    grid-template-areas:
+      'grid stats'
+      'grid panel'
+      'winners panel';
+    column-gap: 1rem;
+    align-items: start;
+  }
+  .mine-stats {
+    grid-area: stats;
+    margin-bottom: 1rem;
+  }
+  .mine-grid {
+    grid-area: grid;
+  }
+  .mine-panel {
+    grid-area: panel;
+  }
+  .mine-winners {
+    grid-area: winners;
+  }
 }
 
 @theme inline {

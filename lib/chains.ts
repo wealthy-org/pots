@@ -1,6 +1,10 @@
 import { defineChain } from 'viem'
+import { resolveChainId } from './config'
 
-const chainId = Number(process.env.NEXT_PUBLIC_ROBINHOOD_CHAIN_ID ?? 46630)
+// Next inlines only literal process.env.NEXT_PUBLIC_* reads, so the variable is read by name.
+const chainId = resolveChainId({
+  NEXT_PUBLIC_ROBINHOOD_CHAIN_ID: process.env.NEXT_PUBLIC_ROBINHOOD_CHAIN_ID,
+})
 const defaultRpcUrls: Record<number, string> = {
   46630: 'https://robinhood-sepolia-rpc.publicnode.com',
   4663: 'https://rpc.mainnet.chain.robinhood.com',

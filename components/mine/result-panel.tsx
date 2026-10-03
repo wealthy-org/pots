@@ -1,6 +1,5 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
 import { Phase, ZERO_BYTES32, type RoundData, type WalletRoundData } from '@/lib/types'
 import { formatWeiToEth } from '@/lib/wei'
 
@@ -10,18 +9,12 @@ export function ResultPanel({
   isConnected,
   claimable,
   walletRound,
-  onClaimEth,
-  onClaimPots,
-  isSubmitting,
 }: {
   roundId?: bigint
   round?: RoundData
   isConnected: boolean
   claimable?: readonly [bigint, bigint]
   walletRound?: WalletRoundData
-  onClaimEth: () => void
-  onClaimPots: () => void
-  isSubmitting: boolean
 }) {
   if (!round || roundId === undefined || roundId === 0n) {
     return null
@@ -34,7 +27,7 @@ export function ResultPanel({
           Randomness pending
         </h2>
         <p className="mt-1.5 text-xs text-text-2">
-          The round is locked and waiting for the verified draw. Anyone can settle once the output
+          The round is locked and waiting for the random result. Anyone can settle once the output
           is stored.
         </p>
         {round.randomOutput !== ZERO_BYTES32 ? (
@@ -55,30 +48,18 @@ export function ResultPanel({
           Result
         </h2>
         <p className="mt-1.5 text-sm">
-          Winning square <span className="font-mono text-gold">#{round.winningSquare}</span>
+          Winning block <span className="font-mono text-gold">#{round.winningSquare}</span>
           {round.jackpotHit ? <span className="text-gold"> · Jackpot hit</span> : null}
         </p>
         {isConnected ? (
-          <div className="mt-2.5 flex flex-col gap-2">
-            {eth > 0n ? (
-              <Button size="sm" onClick={onClaimEth} disabled={isSubmitting}>
-                Claim {formatWeiToEth(eth, 5)} ETH
-              </Button>
-            ) : null}
-            {pots > 0n ? (
-              <Button size="sm" variant="secondary" onClick={onClaimPots} disabled={isSubmitting}>
-                Claim {formatWeiToEth(pots, 4)} POTS
-              </Button>
-            ) : null}
-            {eth === 0n && pots === 0n ? (
-              <p className="text-xs text-text-2">
-                No claimable reward for this wallet in this round.
-              </p>
-            ) : null}
-          </div>
+          <p className="mt-2 text-xs text-text-2">
+            {eth > 0n || pots > 0n
+              ? 'Your reward is ready. Use the button in the deploy panel to claim it.'
+              : 'No claimable reward for this wallet in this round.'}
+          </p>
         ) : (
           <p className="mt-2 text-xs text-text-2">
-            Connect a wallet to see and claim entitlements.
+            Connect a wallet to see and claim your rewards.
           </p>
         )}
       </section>
@@ -93,12 +74,12 @@ export function ResultPanel({
           Round cancelled
         </h2>
         <p className="mt-1.5 text-xs text-text-2">
-          Randomness failed. Entries are refunded in full with no fee.
+          Randomness failed. Deploys are refunded in full with no fee.
         </p>
         {isConnected && refund > 0n ? (
-          <Button size="sm" className="mt-2.5" onClick={onClaimEth} disabled={isSubmitting}>
-            Claim refund {formatWeiToEth(refund, 5)} ETH
-          </Button>
+          <p className="mt-2 text-xs text-text-2">
+            Your refund is ready. Use the button in the deploy panel to claim it.
+          </p>
         ) : null}
       </section>
     )
@@ -107,7 +88,7 @@ export function ResultPanel({
   if (isConnected && walletRound && walletRound.deposited > 0n) {
     return (
       <p className="rounded-md border border-line bg-bg-elev px-3 py-2.5 text-xs text-text-2">
-        Your entry this round: {formatWeiToEth(walletRound.deposited, 5)} ETH
+        Your deploy this round: {formatWeiToEth(walletRound.deposited, 5)} ETH
         {walletRound.ethClaimed || walletRound.potsClaimed ? ' · some rewards already claimed' : ''}
       </p>
     )

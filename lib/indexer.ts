@@ -283,3 +283,45 @@ export async function fetchProtocolStats(
     knownRoundIds,
   }
 }
+
+const MINER_ROW_CAP = 1000
+
+const ROUND_MINERS_QUERY = `
+query RoundMiners($roundId: numeric!) {
+  SquareRound(where: { roundId: { _eq: $roundId } }) { squareId totalEth minerCount }
+  SquareMiner(where: { roundId: { _eq: $roundId } }, limit: 1001) { wallet }
+}`
+
+export type RoundMiners = {
+  /** Index 0 is block 1. `total` lets the caller drop a count that trails the chain. */
+  perBlock: Array<{ total: bigint; miners: number } | null>
+  /** Distinct wallets with ETH on at least one block of the round; null when the row cap may have cut the list. */
+  miners: number | null
+}
+
+export async function fetchRoundMiners(roundId: bigint): Promise<RoundMiners> {
+  const data = await queryIndexer(ROUND_MINERS_QUERY, { roundId: roundId.toString() })
+  const perBlock: RoundMiners['perBlock'] = Array.from({ length: 25 }, () => null)
+  for (const row of asArray(data.SquareRound).map(asRecord)) {
+    const square = Number(row.squareId)
+    if (square >= 1 && square <= 25) {
+      perBlock[square - 1] = { total: toBigInt(row.totalEth), miners: Number(row.minerCount) }
+    }
+  }
+  const rows = asArray(data.SquareMiner)
+  const wallets = new Set(rows.map((row) => String(asRecord(row).wallet)))
+  // One row per wallet and block: a list at the server's row cap may be cut, so no count is shown.
+  return { perBlock, miners: rows.length >= MINER_ROW_CAP ? null : wallets.size }
+}
+
+const LAST_JACKPOT_QUERY = `
+query LastJackpot {
+  Round(where: { jackpotHit: { _eq: true } }, order_by: { settledAt: desc }, limit: 1) { id }
+}`
+
+/** Round id of the latest jackpot hit, or null when none happened. Ordered by settlement time, never by the string id. */
+export async function fetchLastJackpotRound(): Promise<bigint | null> {
+  const data = await queryIndexer(LAST_JACKPOT_QUERY)
+  const [first] = asArray(data.Round)
+  return first === undefined ? null : toBigInt(asRecord(first).id)
+}

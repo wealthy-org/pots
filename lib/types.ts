@@ -39,7 +39,7 @@ export type WalletRoundData = {
 export function phaseLabel(phase: number): string {
   switch (phase) {
     case Phase.WAITING:
-      return 'Waiting for first entry'
+      return 'Waiting for the first deploy'
     case Phase.OPEN:
       return 'Open'
     case Phase.LOCKED:

@@ -1,6 +1,7 @@
 'use client'
 
 import { useReadContract } from 'wagmi'
+import { LeadStat } from '@/components/ui/lead-stat'
 import { Panel } from '@/components/ui/panel'
 import { managerAddress, potsTokenAbi, roundManagerAbi, tokenAddress } from '@/lib/contracts'
 import { formatWeiToEth } from '@/lib/wei'
@@ -9,7 +10,7 @@ function readPots(read: { data: unknown; isError: boolean }, decimals: number): 
   if (read.data !== undefined) {
     return `${formatWeiToEth(read.data as bigint, decimals)} POTS`
   }
-  return read.isError ? 'Unavailable' : 'Loading'
+  return read.isError ? 'Unavailable' : 'Loading...'
 }
 
 export default function TokenPage() {
@@ -47,11 +48,11 @@ export default function TokenPage() {
       </div>
 
       <Panel>
-        <dl className="grid gap-3 text-sm sm:grid-cols-2">
+        <LeadStat label="Total supply" value={totalSupplyValue} />
+        <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
           <Fact label="Name" value={(name.data as string | undefined) ?? '...'} />
           <Fact label="Symbol" value={(symbol.data as string | undefined) ?? '...'} />
           <Fact label="Emission per eligible round" value={emissionValue} />
-          <Fact label="Total supply" value={totalSupplyValue} />
           <Fact label="Cap" value={capValue} />
           <Fact label="Chain ID" value={process.env.NEXT_PUBLIC_ROBINHOOD_CHAIN_ID ?? '46630'} />
         </dl>
@@ -63,8 +64,8 @@ export default function TokenPage() {
         </h2>
         <p className="mt-2 font-mono text-xs break-all text-text">{tokenAddress}</p>
         <p className="mt-2 text-xs text-text-2">
-          Symbol and cap are provisional until the owner confirms the token decisions (D-02). The
-          reserve or capped mint model is not final.
+          The cap is 1,000,000,000 POTS and the manager mints 1 POTS per settled round that has
+          miners on the winning block. At that pace the cap is not reached in practice.
         </p>
       </Panel>
     </section>
@@ -74,7 +75,7 @@ export default function TokenPage() {
 function Fact({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-[10px] font-semibold tracking-[0.14em] text-text-3 uppercase">{label}</dt>
+      <dt className="text-[11px] font-semibold tracking-[0.16em] text-text-3 uppercase">{label}</dt>
       <dd className="mt-0.5 font-mono text-sm">{value}</dd>
     </div>
   )

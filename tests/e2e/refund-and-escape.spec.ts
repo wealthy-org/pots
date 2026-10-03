@@ -1,5 +1,5 @@
 import { test, expect } from './fixtures'
-import { connect, keeperButton } from '../support/ui'
+import { connect, keeperButton, openMine, openOps } from '../support/ui'
 import {
   PLAYER_ADDRESS,
   dice,
@@ -35,8 +35,10 @@ test.describe('refund and escape paths', () => {
     await expect(page.getByRole('heading', { name: 'Randomness pending' })).toBeVisible()
 
     await mineBlocks(10)
+    await openOps(page)
     await keeperButton(page, 'Refund randomness fee').click()
-    await keeperButton(page, 'Cancel and refund entries').click()
+    await keeperButton(page, 'Cancel and refund deploys').click()
+    await openMine(page)
     await expect(page.getByRole('heading', { name: 'Round cancelled' })).toBeVisible()
     await keeperButton(page, /^Claim refund/).click()
     await expect(keeperButton(page, /^Claim refund/)).toBeHidden()
@@ -57,22 +59,21 @@ test.describe('refund and escape paths', () => {
 
     await installWallet()
     await syncBrowserClock()
-    await page.goto('/mine')
-    await connect(page)
+    await openOps(page)
     await expect(keeperButton(page, 'Request randomness')).toBeVisible()
     await expect(
-      page.getByText(/anyone can cancel this round and refund every entry in/),
+      page.getByText(/anyone can cancel this round and refund every deploy in/),
     ).toBeVisible()
-    await expect(keeperButton(page, 'Cancel round and refund entries')).toBeHidden()
+    await expect(keeperButton(page, 'Cancel round and refund deploys')).toBeHidden()
 
     await increaseTime(3600)
     await page.clock.fastForward(3600 * 1000)
-    await keeperButton(page, 'Cancel round and refund entries').click()
+    await keeperButton(page, 'Cancel round and refund deploys').click()
+    await openMine(page)
     await expect(page.getByRole('heading', { name: 'Round cancelled' })).toBeVisible()
     await keeperButton(page, /^Claim refund/).click()
     await expect(keeperButton(page, /^Claim refund/)).toBeHidden()
 
-    await keeperButton(page, 'Start next round').click()
     await expectRefundedToPlayer(start)
   })
 
@@ -90,16 +91,16 @@ test.describe('refund and escape paths', () => {
 
     await installWallet()
     await syncBrowserClock()
-    await page.goto('/mine')
-    await connect(page)
+    await openOps(page)
     await expect(keeperButton(page, 'Refund randomness fee')).toBeVisible()
     await expect(
-      page.getByText(/anyone can cancel this round and refund every entry in/),
+      page.getByText(/anyone can cancel this round and refund every deploy in/),
     ).toBeVisible()
 
     await increaseTime(86_400)
     await page.clock.fastForward(86_400 * 1000)
-    await keeperButton(page, 'Cancel and refund entries').click()
+    await keeperButton(page, 'Cancel and refund deploys').click()
+    await openMine(page)
     await expect(page.getByRole('heading', { name: 'Round cancelled' })).toBeVisible()
     await keeperButton(page, /^Claim refund/).click()
     await expect(keeperButton(page, /^Claim refund/)).toBeHidden()

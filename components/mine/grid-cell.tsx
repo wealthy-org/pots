@@ -6,6 +6,8 @@ export type GridCellData = {
   total: bigint | null
   miners: number | null
   selected: boolean
+  /** 0 to 1, the block's ETH relative to the busiest block. */
+  heat?: number
   you?: bigint | null
   scan?: boolean
   win?: boolean
@@ -16,6 +18,7 @@ export function GridCell({
   total,
   miners,
   selected,
+  heat = 0,
   you,
   scan,
   win,
@@ -41,9 +44,9 @@ export function GridCell({
         ? 'border-gold/60 bg-[linear-gradient(180deg,#1a1610,#110f0b)] shadow-[inset_0_0_0_1px_rgba(232,194,122,0.25)]'
         : 'border-line hover:border-line-2'
 
-  const label = `Square ${id}${total !== null ? `, ${formatWeiToEth(total, 5)} ETH deployed` : ''}${
+  const label = `Block ${id}${total !== null ? `, ${formatWeiToEth(total, 5)} ETH deployed` : ''}${
     miners !== null ? `, ${miners} ${miners === 1 ? 'miner' : 'miners'}` : ''
-  }${selected ? ', selected' : ''}${win ? ', winning square' : ''}`
+  }${you && you > 0n ? `, you ${formatWeiToEth(you, 3)} ETH` : ''}${selected ? ', selected' : ''}${win ? ', winning block' : ''}`
 
   return (
     <button
@@ -58,22 +61,37 @@ export function GridCell({
       onKeyDown={onKeyDown}
       className={`relative flex aspect-square flex-col justify-between overflow-hidden rounded border p-2 text-left transition-colors disabled:cursor-default disabled:opacity-60 max-md:p-1.5 ${stateClass}`}
     >
-      <span className="flex items-start justify-between text-[11px] text-text-2">
+      {heat > 0 && !win ? (
+        <span
+          aria-hidden="true"
+          className="absolute inset-x-0 bottom-0 bg-gold/[0.12]"
+          style={{ height: `${Math.round(heat * 90)}%` }}
+        />
+      ) : null}
+      <span className="relative flex items-start justify-between text-[11px] text-text-2">
         <span className={win ? 'text-gold-ink/65' : selected ? 'text-gold' : ''}>#{id}</span>
         {miners !== null ? (
           <span className={`font-mono ${win ? 'text-gold-ink/65' : ''}`}>{miners}</span>
         ) : null}
       </span>
-      <span className="flex flex-col items-end">
+      <span className="relative flex flex-col items-end">
         <span
-          className={`font-mono text-[13px] font-semibold ${win ? 'text-gold-ink' : 'text-white'}`}
+          className={`font-mono text-[13px] font-semibold max-md:text-[10.5px] ${win ? 'text-gold-ink' : 'text-white'}`}
         >
-          {total !== null ? formatWeiToEth(total, 5) : '–'}
+          {total !== null ? formatWeiToEth(total, 5) : '-'}
         </span>
         {you && you > 0n ? (
-          <span className={`font-mono text-[10px] ${win ? 'text-gold-ink/65' : 'text-gold'}`}>
-            you {formatWeiToEth(you, 3)}
-          </span>
+          <>
+            <span
+              className={`font-mono text-[10px] max-md:hidden ${win ? 'text-gold-ink' : 'text-gold'}`}
+            >
+              you {formatWeiToEth(you, 3)}
+            </span>
+            <span
+              aria-hidden="true"
+              className={`hidden h-1.5 w-1.5 rounded-full max-md:block ${win ? 'bg-gold-ink' : 'bg-gold'}`}
+            />
+          </>
         ) : null}
       </span>
     </button>

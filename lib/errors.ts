@@ -2,13 +2,13 @@ import { decodeErrorResult } from 'viem'
 import { roundManagerAbi } from './contracts'
 
 const errorMessages: Record<string, string> = {
-  NotOpen: 'The round is not accepting entries.',
+  NotOpen: 'The round is not accepting deploys.',
   RoundClosed: 'The round deadline passed before inclusion. Refresh and try again.',
-  InvalidSquares: 'Pick unique squares between 1 and 25.',
-  AmountBelowMinimum: 'The amount is below the minimum per square.',
-  AmountAboveMaximum: 'The amount is above the maximum per square.',
-  ValueMismatch: 'The total does not match squares times amount.',
-  ContractPaused: 'New entries are paused.',
+  InvalidSquares: 'Pick unique blocks between 1 and 25.',
+  AmountBelowMinimum: 'The amount is below the minimum per block.',
+  AmountAboveMaximum: 'The amount is above the maximum per block.',
+  ValueMismatch: 'The total does not match blocks times amount.',
+  ContractPaused: 'New deploys are paused.',
   NotLockable: 'The round cannot be locked yet.',
   WrongPhase: 'This action is not available in the current phase.',
   RandomnessAlreadyRequested: 'Randomness was already requested for this round.',
@@ -21,7 +21,7 @@ const errorMessages: Record<string, string> = {
   InsufficientTreasury: 'The treasury balance is too low.',
   CancelNotAllowed: 'Cancellation is not allowed yet.',
   Unauthorized: 'This wallet is not authorized for that action.',
-  Paused: 'New entries are paused.',
+  Paused: 'New deploys are paused.',
 }
 
 type ErrorCandidate = {

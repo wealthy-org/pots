@@ -1,5 +1,7 @@
 import { defineConfig } from '@playwright/test'
 
+import { KEEPER_KEY, KEEPER_SECRET } from './tests/support/chain'
+
 const appPort = 3217
 const anvilPort = 8599
 
@@ -28,6 +30,8 @@ export default defineConfig({
       NEXT_PUBLIC_ROBINHOOD_CHAIN_ID: '31337',
       NEXT_PUBLIC_ROBINHOOD_RPC_URL: `http://127.0.0.1:${anvilPort}`,
       NEXT_PUBLIC_INDEXER_URL: '',
+      KEEPER_PRIVATE_KEY: KEEPER_KEY,
+      KEEPER_SECRET,
     },
   },
 })

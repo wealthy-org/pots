@@ -31,7 +31,7 @@ export function useWalletHistory(wallet: `0x${string}` | undefined) {
     enabled: Boolean(client) && Boolean(wallet),
     retry: false,
     refetchInterval: (query) =>
-      indexerEnabled && query.state.data?.source.kind === 'contract'
+      query.state.data?.source.kind === 'contract'
         ? CONTRACT_SCAN_INTERVAL_MS
         : INDEXER_POLL_INTERVAL_MS,
     queryFn: async () => {

@@ -17,6 +17,8 @@ export const securityHeaders = [
 ]
 
 const nextConfig: NextConfig = {
+  // The dev badge overlaps the left rail and intercepts clicks in the e2e suite; it is dev only.
+  devIndicators: false,
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }]
   },

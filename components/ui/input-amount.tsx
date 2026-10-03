@@ -26,9 +26,9 @@ export function InputAmount({
     if (parsed === null) {
       error = 'Enter a valid ETH amount'
     } else if (minWei !== undefined && parsed < minWei) {
-      error = `Minimum is ${formatWeiToEth(minWei)} ETH per square`
+      error = `Minimum is ${formatWeiToEth(minWei)} ETH per block`
     } else if (maxWei !== undefined && maxWei > 0n && parsed > maxWei) {
-      error = `Maximum is ${formatWeiToEth(maxWei)} ETH per square`
+      error = `Maximum is ${formatWeiToEth(maxWei)} ETH per block`
     }
   }
 
