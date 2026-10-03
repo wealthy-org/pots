@@ -4,6 +4,7 @@ import { Inter, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import { Providers } from './providers'
 import { SiteHeader } from '@/components/layout/site-header'
+import { ConfigNotice } from '@/components/layout/config-notice'
 import { SiteTabbar } from '@/components/layout/site-tabbar'
 import { NetworkBanner } from '@/components/wallet/network-banner'
 
@@ -31,6 +32,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <Providers>
           <SiteHeader />
           <main className="relative z-[1] mx-auto w-full max-w-[1180px] px-4 pt-6 pb-24 md:px-5 md:pb-10">
+            <ConfigNotice />
             <NetworkBanner />
             {children}
           </main>

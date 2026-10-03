@@ -116,7 +116,7 @@ contract PotsRandomnessAdapter is IPotsRandomnessAdapter, IDiceConsumer, Ownable
 
     /// @notice Receives the provider's random output and passes it to the manager.
     /// @dev Only the configured coordinator and provider may call it; unknown requests revert.
-    function entropyCallback(uint64 sequenceNumber, address provider_, bytes32 random) external {
+    function _entropyCallback(uint64 sequenceNumber, address provider_, bytes32 random) external {
         if (msg.sender != address(dice) || provider_ != provider) {
             revert NotCoordinator();
         }

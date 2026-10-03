@@ -55,6 +55,6 @@ contract MockDiceCoordinator is IDiceEntropy {
     function fulfill(uint64 sequenceNumber, bytes32 random) external {
         address consumer = consumerOf[sequenceNumber];
         require(consumer != address(0), "MockDice: unknown");
-        IDiceConsumer(consumer).entropyCallback(sequenceNumber, provider, random);
+        IDiceConsumer(consumer)._entropyCallback(sequenceNumber, provider, random);
     }
 }

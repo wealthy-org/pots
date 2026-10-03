@@ -2,11 +2,12 @@
 pragma solidity ^0.8.30;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { Ownable2Step } from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import { IPotsRandomnessAdapter } from "./interfaces/IPotsRandomnessAdapter.sol";
 import { POTSToken } from "./POTSToken.sol";
 
-contract PotsRoundManager is Ownable, ReentrancyGuard {
+contract PotsRoundManager is Ownable2Step, ReentrancyGuard {
     uint256 public constant MAX_SQUARES = 25;
     uint256 public constant BPS_DENOMINATOR = 10_000;
     uint8 public constant CLAIM_KIND_ETH = 0;
@@ -102,6 +103,7 @@ contract PotsRoundManager is Ownable, ReentrancyGuard {
     error InsufficientTreasury();
     error ZeroAddress();
     error InvalidDelay();
+    error RenounceDisabled();
 
     event RoundOpened(uint256 indexed roundId, uint256 rolloverIn);
     event EntryPlaced(
@@ -174,6 +176,12 @@ contract PotsRoundManager is Ownable, ReentrancyGuard {
         randomnessRefundDelayBlocks = randomnessRefundDelayBlocks_;
         lockedCancelDelay = lockedCancelDelay_;
         forceCancelDelay = forceCancelDelay_;
+    }
+
+    /// @notice Disabled: renouncing would lock the treasury and remove the ability to pause.
+    /// @dev Ownership moves only through the two-step `transferOwnership` and `acceptOwnership`.
+    function renounceOwnership() public view override onlyOwner {
+        revert RenounceDisabled();
     }
 
     modifier onlyAdapter() {

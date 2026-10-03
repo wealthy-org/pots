@@ -41,7 +41,7 @@ contract RandomnessAndClaimsTest is PotsTestBase {
         _pendingRound();
         uint64 sequence = manager.getRound(1).randomnessRequestId;
         vm.expectRevert(PotsRandomnessAdapter.NotCoordinator.selector);
-        adapter.entropyCallback(sequence, DICE_PROVIDER, bytes32(uint256(1)));
+        adapter._entropyCallback(sequence, DICE_PROVIDER, bytes32(uint256(1)));
     }
 
     function test_setManager_oneTimeOnly() public {
@@ -54,7 +54,7 @@ contract RandomnessAndClaimsTest is PotsTestBase {
         _pendingRound();
         vm.prank(address(dice));
         vm.expectRevert(PotsRandomnessAdapter.UnknownRequest.selector);
-        adapter.entropyCallback(999, DICE_PROVIDER, bytes32(uint256(1)));
+        adapter._entropyCallback(999, DICE_PROVIDER, bytes32(uint256(1)));
     }
 
     function test_duplicateCallback_reverts() public {

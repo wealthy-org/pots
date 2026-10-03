@@ -31,6 +31,29 @@
   },
   {
     "type": "function",
+    "name": "_entropyCallback",
+    "inputs": [
+      {
+        "name": "sequenceNumber",
+        "type": "uint64",
+        "internalType": "uint64"
+      },
+      {
+        "name": "provider_",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "random",
+        "type": "bytes32",
+        "internalType": "bytes32"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "callbackGasLimit",
     "inputs": [],
     "outputs": [
@@ -54,29 +77,6 @@
       }
     ],
     "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "entropyCallback",
-    "inputs": [
-      {
-        "name": "sequenceNumber",
-        "type": "uint64",
-        "internalType": "uint64"
-      },
-      {
-        "name": "provider_",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "random",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
   },
   {
     "type": "function",

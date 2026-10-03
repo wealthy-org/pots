@@ -1,4 +1,12 @@
 import type { NextConfig } from 'next'
+import { describeConfigIssues, resolveChainId, validateConfig } from './lib/config'
+
+if (resolveChainId(process.env) === 4663) {
+  const issues = validateConfig(process.env)
+  if (issues.length > 0) {
+    throw new Error(`Mainnet build is not configured: ${describeConfigIssues(issues)}`)
+  }
+}
 
 export const securityHeaders = [
   { key: 'Content-Security-Policy', value: "frame-ancestors 'none'" },

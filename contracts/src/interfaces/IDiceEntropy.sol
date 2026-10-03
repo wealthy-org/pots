@@ -13,5 +13,7 @@ interface IDiceEntropy {
 }
 
 interface IDiceConsumer {
-    function entropyCallback(uint64 sequenceNumber, address provider, bytes32 random) external;
+    /// @dev The deployed Dice oracle calls this exact name and selector (0x52a5f1f8), as Pyth Entropy
+    /// consumers do. Verified against the oracle on testnet by tracing a reveal.
+    function _entropyCallback(uint64 sequenceNumber, address provider, bytes32 random) external;
 }

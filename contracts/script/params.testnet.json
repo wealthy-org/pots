@@ -10,12 +10,12 @@
     "payoutBps": 9000
   },
   "entry": {
-    "minPerSquareWei": "1000000000000000",
+    "minPerSquareWei": "100000000000000",
     "maxPerSquareWei": "1000000000000000000"
   },
   "round": {
     "windowSeconds": 60,
-    "lockedCancelDelaySeconds": 3600,
+    "lockedCancelDelaySeconds": 600,
     "forceCancelDelaySeconds": 86400
   },
   "jackpot": {
@@ -31,6 +31,7 @@
     "refundDelayBlocks": 6
   },
   "provisional": [
+    "TESTNET ONLY: entry.minPerSquareWei is 0.0001 ETH (mainnet 0.001 ETH) so a full 25-square entry is affordable on a small faucet balance; round.lockedCancelDelaySeconds is 600 (mainnet 3600) so the LOCKED escape can be rehearsed in 10 minutes",
     "token.symbol: final symbol pending owner confirmation (D-02)",
     "token.cap: pending owner decision (D-02)",
     "entry.maxPerSquareWei: provisional testnet value; D-01 open",

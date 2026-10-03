@@ -47,6 +47,10 @@ forge test
 forge fmt
 ```
 
+## Mainnet deployment
+
+`contracts/script/DeployMainnet.s.sol` deploys with `params.mainnet.json` and ends with assertions on wiring, ownership, and every parameter. It needs `MAINNET_OWNER` (a multisig contract). Rehearse it on a fork of chain 4663 first (`anvil --fork-url <mainnet rpc>`, then `forge script` without `--broadcast`). A build for chain 4663 refuses to compile when a required `NEXT_PUBLIC_` variable is missing.
+
 ## Indexer
 
 The indexer lives in `indexer/` and is built and deployed by Envio Cloud from this repository through its GitHub integration. No local CLI install is required. If a local CLI run is ever needed, use WSL2 or Docker because the Envio CLI has no native Windows binary.

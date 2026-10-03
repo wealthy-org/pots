@@ -1,0 +1,40 @@
+{
+  "token": {
+    "name": "POTS",
+    "symbol": "POTS",
+    "cap": "1000000000000000000000000000"
+  },
+  "fees": {
+    "treasuryBps": 900,
+    "jackpotBps": 100,
+    "payoutBps": 9000
+  },
+  "entry": {
+    "minPerSquareWei": "1000000000000000",
+    "maxPerSquareWei": "50000000000000000"
+  },
+  "round": {
+    "windowSeconds": 60,
+    "lockedCancelDelaySeconds": 3600,
+    "forceCancelDelaySeconds": 86400
+  },
+  "jackpot": {
+    "chanceDenominator": 625
+  },
+  "emission": {
+    "perRoundWei": "1000000000000000000"
+  },
+  "randomness": {
+    "diceCoordinator": "0xd8a0680e7699526b57140ed4eafdcc7219dc0a0c",
+    "diceProvider": "0x8741b8a825644D9Ef18Faf2DAB5e9b47B900F2b6",
+    "callbackGasLimit": 200000,
+    "refundDelayBlocks": 6
+  },
+  "provisional": [
+    "entry.maxPerSquareWei: 0.05 ETH chosen by the agent for D-01 on the owner's instruction to follow the proposal (conservative first cap); the owner may change it before the audit freezes the code",
+    "token.cap and token.symbol: closed by the owner for D-02 (capped mint, 1,000,000,000 POTS, symbol POTS)",
+    "round.lockedCancelDelaySeconds and round.forceCancelDelaySeconds: closed by the owner for D-09 (3,600 s and 86,400 s)",
+    "randomness.diceCoordinator: Dice oracle on chain 4663 from credentials.md; the provider is the one that served 11 request and reveal pairs on mainnet in the last 245,000 blocks (checked 2026-10-02)",
+    "jackpot.chanceDenominator: 625 is provisional until the owner signs off the odds (L-16)"
+  ]
+}
