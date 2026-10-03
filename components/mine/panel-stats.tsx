@@ -3,6 +3,7 @@
 import { SegmentTimer } from '@/components/mine/segment-timer'
 import { EthMark } from '@/components/ui/token-mark'
 import { formatCountdown, useCountdown } from '@/hooks/use-countdown'
+import { roundsAgoLabel } from '@/lib/format'
 import { Phase, type RoundData } from '@/lib/types'
 import { formatWeiToEth } from '@/lib/wei'
 
@@ -59,7 +60,7 @@ export function PanelStats({
       <div className="grid grid-cols-3 items-center rounded-md border border-line bg-bg-elev py-2">
         <div className="grid justify-items-center gap-1 px-1 text-center">
           <span className="text-[9px] font-semibold tracking-[0.12em] text-gold/80 uppercase">
-            {miners === null ? '- miners' : `${miners} ${miners === 1 ? 'miner' : 'miners'}`}
+            {miners === null ? 'Miners' : `${miners} ${miners === 1 ? 'miner' : 'miners'}`}
           </span>
           <span className="flex items-center gap-1 font-mono text-base font-semibold">
             <EthMark className="h-3.5 w-3.5" />
@@ -76,11 +77,7 @@ export function PanelStats({
             <small className="ml-1 text-[10px] font-medium text-gold/70">ETH</small>
           </span>
           <span className="text-[9px] tracking-[0.12em] text-gold/70 uppercase">
-            {roundsAgo === undefined || roundsAgo === null || roundsAgo < 0
-              ? 'Current jackpot'
-              : roundsAgo === 0
-                ? 'Hit this round'
-                : `${roundsAgo}  ago`}
+            {roundsAgoLabel(roundsAgo)}
           </span>
         </div>
         <div className="grid justify-items-center gap-1 px-1 text-center">

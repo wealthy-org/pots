@@ -153,6 +153,13 @@ export function createKeeperChain(privateKey: `0x${string}`): KeeperChain {
       timeoutMs: number = MAX_RECEIPT_WAIT_MS,
     ): Promise<{ txHash: string }> {
       try {
+        // A transaction of this account that is still pending (for example after a receipt timeout)
+        // would make a second send revert on chain and burn gas, so the call waits for the next run.
+        const [pendingNonce, latestNonce] = await Promise.all([
+          publicClient.getTransactionCount({ address: account.address, blockTag: 'pending' }),
+          publicClient.getTransactionCount({ address: account.address, blockTag: 'latest' }),
+        ])
+        if (pendingNonce > latestNonce) throw new KeeperChainError('reverted')
         const args = action === 'settle' || action === 'refundRandomness' ? [roundId] : []
         const { request } = await publicClient.simulateContract({
           account,

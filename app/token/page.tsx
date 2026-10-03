@@ -47,9 +47,10 @@ export default function TokenPage() {
         </p>
       </div>
 
+      <LeadStat label="Total supply" value={totalSupplyValue} />
+
       <Panel>
-        <LeadStat label="Total supply" value={totalSupplyValue} />
-        <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+        <dl className="grid gap-3 text-sm sm:grid-cols-2">
           <Fact label="Name" value={(name.data as string | undefined) ?? '...'} />
           <Fact label="Symbol" value={(symbol.data as string | undefined) ?? '...'} />
           <Fact label="Emission per eligible round" value={emissionValue} />

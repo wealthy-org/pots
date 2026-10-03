@@ -14,7 +14,8 @@ import { HISTORY_ROW_LIMIT } from '@/lib/indexer'
 import { netEth } from '@/lib/shares'
 import { formatWeiToEth } from '@/lib/wei'
 
-const CLAIM_SCAN_LIMIT = 40
+// tradeoff: History checks every round it lists (the row limit), so no reward is out of reach of a button.
+// Mine checks the latest 15 only; older rewards are claimed from History.
 
 /** One value of a history row: labelled on narrow screens, a plain column from `sm` up. */
 function Cell({ label, value }: { label: string; value: string }) {
@@ -31,7 +32,7 @@ function Cell({ label, value }: { label: string; value: string }) {
 export default function HistoryPage() {
   const { address, isConnected } = useAccount()
   const history = useWalletHistory(address)
-  const claimable = useClaimableRounds(address, CLAIM_SCAN_LIMIT)
+  const claimable = useClaimableRounds(address, HISTORY_ROW_LIMIT)
   const writes = usePotsWrites()
   const rows = history.data?.rows
 
@@ -180,13 +181,8 @@ export default function HistoryPage() {
       {isConnected && history.data ? <DataSource source={history.data.source} /> : null}
       {isConnected && history.data?.truncated ? (
         <p className="text-xs text-text-2">
-          Showing the latest {HISTORY_ROW_LIMIT} rounds. Older rounds stay on chain.
-        </p>
-      ) : null}
-      {isConnected && rows && rows.length > CLAIM_SCAN_LIMIT ? (
-        <p className="text-xs text-text-2">
-          Claim buttons cover the latest {CLAIM_SCAN_LIMIT} rounds. Older rewards stay claimable on
-          the contract.
+          Showing the latest {HISTORY_ROW_LIMIT} rounds, each with its claim buttons. Older rounds
+          stay on chain.
         </p>
       ) : null}
     </section>

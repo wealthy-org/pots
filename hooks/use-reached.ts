@@ -18,10 +18,12 @@ export function useReached(timestamp?: bigint): boolean {
       return
     }
     const wait = target - Date.now()
-    if (wait <= 0) {
+    // A target already behind the clock still needs one refresh, or the stale first read stays false.
+    const delay = wait <= 0 ? 0 : Math.min(wait, MAX_TIMEOUT_MS) + 50
+    if (wait <= 0 && now >= target) {
       return
     }
-    const timer = setTimeout(() => setNow(Date.now()), Math.min(wait, MAX_TIMEOUT_MS) + 50)
+    const timer = setTimeout(() => setNow(Date.now()), delay)
     return () => clearTimeout(timer)
   }, [target, now])
 

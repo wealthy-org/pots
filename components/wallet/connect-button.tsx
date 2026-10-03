@@ -98,15 +98,18 @@ export function ConnectButton() {
   }
 
   return (
-    <>
+    <div className="relative">
       <Button size="sm" onClick={wallet.connect} disabled={wallet.isPending}>
         {wallet.isPending ? 'Connecting...' : 'Connect wallet'}
       </Button>
       {wallet.message ? (
-        <span role="alert" className="sr-only">
+        <span
+          role="alert"
+          className="absolute top-full right-0 mt-1 w-56 rounded-md border border-line-2 bg-bg-elev px-2.5 py-1.5 text-xs text-loss"
+        >
           {wallet.message}
         </span>
       ) : null}
-    </>
+    </div>
   )
 }

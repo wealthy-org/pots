@@ -47,29 +47,34 @@ export default function StatsPage() {
       ) : null}
 
       {data ? (
-        <Panel>
+        <>
           <LeadStat
             label="Total ETH committed"
             value={`${formatWeiToEth(data.stats.totalCommitted, 5)} ETH`}
           />
-          <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-3">
-            <Stat label="Rounds completed" value={data.stats.rounds.toString()} />
-            <Stat
-              label="ETH distributed"
-              value={`${formatWeiToEth(data.stats.distributed, 5)} ETH`}
-            />
-            <Stat label="Jackpot paid" value={`${formatWeiToEth(data.stats.jackpotPaid, 5)} ETH`} />
-            <Stat
-              label="POTS emitted"
-              value={potsEmittedValue}
-              note="Token contract, current supply"
-            />
-            <Stat label="Unique wallets" value={data.stats.uniqueWallets.toString()} />
-          </dl>
-          <div className="mt-4">
-            <DataSource source={data.source} />
-          </div>
-        </Panel>
+          <Panel>
+            <dl className="grid gap-4 text-sm sm:grid-cols-3">
+              <Stat label="Rounds completed" value={data.stats.rounds.toString()} />
+              <Stat
+                label="ETH distributed"
+                value={`${formatWeiToEth(data.stats.distributed, 5)} ETH`}
+              />
+              <Stat
+                label="Jackpot paid"
+                value={`${formatWeiToEth(data.stats.jackpotPaid, 5)} ETH`}
+              />
+              <Stat
+                label="POTS emitted"
+                value={potsEmittedValue}
+                note="Token contract, current supply"
+              />
+              <Stat label="Unique wallets" value={data.stats.uniqueWallets.toString()} />
+            </dl>
+            <div className="mt-4">
+              <DataSource source={data.source} />
+            </div>
+          </Panel>
+        </>
       ) : null}
     </section>
   )

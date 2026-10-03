@@ -5,7 +5,6 @@ import { useAccount } from 'wagmi'
 import { DataSource } from '@/components/ui/data-source'
 import { EmptyState } from '@/components/ui/empty-state'
 import { LeadStat } from '@/components/ui/lead-stat'
-import { Panel } from '@/components/ui/panel'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useWalletHistory } from '@/hooks/use-wallet-history'
 import { shortenAddress } from '@/lib/format'
@@ -91,9 +90,9 @@ export default function ProfilePage() {
       ) : null}
 
       {isConnected && rows && rows.length > 0 ? (
-        <Panel className="p-4">
+        <div className="flex flex-col gap-3">
           <LeadStat label="Total deployed" value={`${formatWeiToEth(stats.deposited, 5)} ETH`} />
-          <dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <Stat label="Rounds played" value={stats.rounds.toString()} />
             <Stat label="Rounds with a claim" value={stats.rewardRounds.toString()} />
             <Stat label="ETH claimed" value={`${formatWeiToEth(stats.claimedEth, 5)} ETH`} />
@@ -105,12 +104,12 @@ export default function ProfilePage() {
             <Stat label="First round" value={stats.firstRound ? `#${stats.firstRound}` : '-'} />
             <Stat label="Latest round" value={stats.latestRound ? `#${stats.latestRound}` : '-'} />
           </dl>
-          <p className="mt-3 text-xs text-text-2">
+          <p className="text-xs text-text-2">
             ETH claimed minus deployed counts only rewards and refunds you have already claimed, so
             a recent win shows as negative until you claim it on the Mine page or in History. ETH
             claimed includes refunds from cancelled rounds.
           </p>
-        </Panel>
+        </div>
       ) : null}
 
       {isConnected && history.data ? <DataSource source={history.data.source} /> : null}
