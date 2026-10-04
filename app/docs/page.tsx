@@ -26,15 +26,55 @@ export default function DocsPage() {
           <li>1% goes to the jackpot.</li>
         </ul>
         <p>
-          If nobody deployed on the winning block, the prize pool rolls over to the next round and
-          is added to its pool.
-        </p>
-        <p>
           ETH deployed on blocks that do not win is not returned. A round that is cancelled refunds
           every deploy in full, with no fee.
         </p>
       </InfoSection>
 
+      <InfoSection title="A round with no winner">
+        <p>
+          If nobody deployed on the winning block, the round has no winner. The 9% and the 1% are
+          still taken as in any round. The 90% prize pool is not paid out: it rolls over and is
+          added to the pool of the next round that has a winner, where it is shared by the miners on
+          that winning block. Several empty rounds in a row add up.
+        </p>
+        <ul className="list-disc pl-5">
+          <li>ETH deployed on blocks that did not win is not returned in a round that settled.</li>
+          <li>No POTS is minted for a round without a winner.</li>
+          <li>Deploys are refunded in full only when a round is cancelled (see below).</li>
+        </ul>
+      </InfoSection>
+
+      <InfoSection title="Who can stop what">
+        <ul className="list-disc pl-5">
+          <li>
+            Nobody can deploy for you, move your ETH, or change your claim. Taking part is your
+            choice in every round.
+          </li>
+          <li>
+            The owner (a multisig on mainnet) can pause new deploys. While paused, claims, refunds,
+            settlement, and cancellations of stuck rounds keep working, so a pause never locks
+            funds. The owner can withdraw the treasury share, but not deploys, unclaimed prizes, the
+            rollover, or the jackpot. The owner cannot change the rules, the amounts, or the odds
+            (they are fixed when the contract is deployed), cannot mint POTS, and cannot cancel a
+            healthy round.
+          </li>
+          <li>
+            Anyone can move a round forward: start it, lock it, request the random output, and
+            settle it. The app does this on a schedule, and if the schedule stops, any person can do
+            it (the Operator page lists the steps).
+          </li>
+          <li>
+            A round that gets stuck can be cancelled by anyone after a waiting time: 1 hour after it
+            locked, or 1 day after the random output was requested without an answer (mainnet
+            defaults). Every deploy of that round is then refunded in full.
+          </li>
+          <li>
+            The randomness fee is paid from the treasury. If the treasury cannot cover it, the round
+            waits until anyone tops the treasury up; deploys already made stay safe in the contract.
+          </li>
+        </ul>
+      </InfoSection>
       <InfoSection title="Jackpot">
         <p>
           Each settled round that has miners on the winning block has a 1 in 625 chance of a jackpot
