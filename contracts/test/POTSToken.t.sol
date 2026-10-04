@@ -64,4 +64,60 @@ contract POTSTokenTest is Test {
         assertEq(token.balanceOf(alice), 3e18);
         assertEq(token.balanceOf(minter), 2e18);
     }
+
+    function test_burn_holderBurnsOwnPots_andSupplyFalls() public {
+        vm.prank(minter);
+        token.mint(alice, 5e18);
+        vm.prank(alice);
+        token.burn(2e18);
+        assertEq(token.balanceOf(alice), 3e18);
+        assertEq(token.totalSupply(), 3e18);
+        assertEq(token.totalMinted(), 5e18);
+    }
+
+    function test_burnFrom_needsAllowance() public {
+        vm.prank(minter);
+        token.mint(alice, 5e18);
+        vm.prank(owner);
+        vm.expectRevert(
+            abi.encodeWithSignature(
+                "ERC20InsufficientAllowance(address,uint256,uint256)", owner, 0, 1e18
+            )
+        );
+        token.burnFrom(alice, 1e18);
+
+        vm.prank(alice);
+        token.approve(owner, 1e18);
+        vm.prank(owner);
+        token.burnFrom(alice, 1e18);
+        assertEq(token.balanceOf(alice), 4e18);
+        assertEq(token.allowance(alice, owner), 0);
+        assertEq(token.totalSupply(), 4e18);
+    }
+
+    function test_burn_neverReopensMintingCapacity() public {
+        vm.startPrank(minter);
+        token.mint(alice, CAP);
+        vm.stopPrank();
+        vm.prank(alice);
+        token.burn(10e18);
+        assertEq(token.totalSupply(), CAP - 10e18);
+        assertEq(token.totalMinted(), CAP);
+
+        vm.prank(minter);
+        vm.expectRevert(POTSToken.CapExceeded.selector);
+        token.mint(alice, 1);
+    }
+
+    function testFuzz_totalSupplyNeverAboveTotalMintedNorCap(uint96 mintSeed, uint96 burnSeed)
+        public
+    {
+        uint256 amount = bound(mintSeed, 1, CAP);
+        vm.prank(minter);
+        token.mint(alice, amount);
+        vm.prank(alice);
+        token.burn(bound(burnSeed, 0, amount));
+        assertLe(token.totalSupply(), token.totalMinted());
+        assertLe(token.totalMinted(), token.cap());
+    }
 }

@@ -10,6 +10,8 @@ import { POTSToken } from "./POTSToken.sol";
 contract PotsRoundManager is Ownable2Step, ReentrancyGuard {
     uint256 public constant MAX_SQUARES = 25;
     uint256 public constant BPS_DENOMINATOR = 10_000;
+    /// @notice Share of a referred wallet's POTS claim minted to its referrer.
+    uint256 public constant REFERRAL_BPS = 100;
     uint8 public constant CLAIM_KIND_ETH = 0;
     uint8 public constant CLAIM_KIND_POTS = 1;
     uint256 public constant MIN_ESCAPE_DELAY = 10 minutes;
@@ -86,6 +88,11 @@ contract PotsRoundManager is Ownable2Step, ReentrancyGuard {
     /// @notice A wallet's own permission for the plan contract to move its ETH winnings into its plan.
     mapping(address => bool) public planClaimConsent;
 
+    /// @notice The permanent referrer of a wallet, zero when none.
+    mapping(address => address) public referrerOf;
+    /// @notice True once a wallet has deployed, by hand or through a plan.
+    mapping(address => bool) public hasEntered;
+
     error NotOpen();
     error RoundClosed();
     error InvalidSquares();
@@ -113,6 +120,9 @@ contract PotsRoundManager is Ownable2Step, ReentrancyGuard {
     error PlanContractAlreadySet();
     error NoClaimConsent();
     error PlanContractNotSet();
+    error SelfReferral();
+    error ReferrerAlreadySet();
+    error ReferralTooLate();
 
     event RoundOpened(uint256 indexed roundId, uint256 rolloverIn);
     event EntryPlaced(
@@ -150,6 +160,10 @@ contract PotsRoundManager is Ownable2Step, ReentrancyGuard {
     event PausedSet(bool paused);
     event PlanContractSet(address indexed plan);
     event PlanClaimConsentSet(address indexed wallet, bool allowed);
+    event ReferrerSet(address indexed wallet, address indexed referrer);
+    event ReferralRewarded(
+        uint256 indexed roundId, address indexed wallet, address indexed referrer, uint256 amount
+    );
 
     constructor(
         address token_,
@@ -263,6 +277,40 @@ contract PotsRoundManager is Ownable2Step, ReentrancyGuard {
         _enter(msg.sender, squareIds, amountPerSquare);
     }
 
+    /// @notice Tags the caller as referred by `referrer`, permanently. Only before the caller's first
+    /// deploy, and never to itself.
+    function setReferrer(address referrer) external {
+        _setReferrer(msg.sender, referrer);
+    }
+
+    /// @notice `setReferrer(referrer)` followed by `enter(squareIds, amountPerSquare)`, so a first
+    /// deploy through a referral link needs one transaction.
+    function enterWithReferrer(
+        address referrer,
+        uint8[] calldata squareIds,
+        uint256 amountPerSquare
+    ) external payable nonReentrant {
+        _setReferrer(msg.sender, referrer);
+        _enter(msg.sender, squareIds, amountPerSquare);
+    }
+
+    function _setReferrer(address wallet, address referrer) internal {
+        if (referrer == address(0)) {
+            revert ZeroAddress();
+        }
+        if (referrer == wallet) {
+            revert SelfReferral();
+        }
+        if (referrerOf[wallet] != address(0)) {
+            revert ReferrerAlreadySet();
+        }
+        if (hasEntered[wallet]) {
+            revert ReferralTooLate();
+        }
+        referrerOf[wallet] = referrer;
+        emit ReferrerSet(wallet, referrer);
+    }
+
     /// @notice Same as `enter`, for another wallet, funded by msg.value.
     /// @dev Only the registered plan contract. The entry, the claim, and the events belong to `wallet`.
     function enterFor(address wallet, uint8[] calldata squareIds, uint256 amountPerSquare)
@@ -336,6 +384,9 @@ contract PotsRoundManager is Ownable2Step, ReentrancyGuard {
         round.totalEth += total;
         walletRounds[roundId][wallet].deposited += total;
         totalUnsettledDeposits += total;
+        if (!hasEntered[wallet]) {
+            hasEntered[wallet] = true;
+        }
         emit EntryPlaced(roundId, wallet, squareIds, amountPerSquare, total);
     }
 
@@ -624,6 +675,22 @@ contract PotsRoundManager is Ownable2Step, ReentrancyGuard {
         emit RewardAllocated(roundId, msg.sender, 0, pots);
         emit RewardClaimed(roundId, msg.sender, CLAIM_KIND_POTS, pots);
         token.mint(msg.sender, pots);
+        _rewardReferrer(roundId, msg.sender, pots);
+    }
+
+    /// @dev Mints the referral bonus when it is due and fits under the cap. A plain check, not a try
+    /// block, so a claimant cannot skip a due bonus by choosing little gas.
+    function _rewardReferrer(uint256 roundId, address wallet, uint256 pots) internal {
+        address referrer = referrerOf[wallet];
+        if (referrer == address(0)) {
+            return;
+        }
+        uint256 bonus = (pots * REFERRAL_BPS) / BPS_DENOMINATOR;
+        if (bonus == 0 || token.totalMinted() + bonus > token.cap()) {
+            return;
+        }
+        token.mint(referrer, bonus);
+        emit ReferralRewarded(roundId, wallet, referrer, bonus);
     }
 
     /// @notice Withdraws accrued fees from the treasury balance.

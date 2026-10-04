@@ -146,6 +146,19 @@
   },
   {
     "type": "function",
+    "name": "REFERRAL_BPS",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "acceptOwnership",
     "inputs": [],
     "outputs": [],
@@ -346,6 +359,29 @@
         "internalType": "uint256"
       }
     ],
+    "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "enterWithReferrer",
+    "inputs": [
+      {
+        "name": "referrer",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "squareIds",
+        "type": "uint8[]",
+        "internalType": "uint8[]"
+      },
+      {
+        "name": "amountPerSquare",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
     "stateMutability": "payable"
   },
   {
@@ -618,6 +654,25 @@
   },
   {
     "type": "function",
+    "name": "hasEntered",
+    "inputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "invariantHolds",
     "inputs": [],
     "outputs": [
@@ -870,6 +925,25 @@
   },
   {
     "type": "function",
+    "name": "referrerOf",
+    "inputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "refundRandomness",
     "inputs": [
       {
@@ -959,6 +1033,19 @@
     "inputs": [
       {
         "name": "plan",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setReferrer",
+    "inputs": [
+      {
+        "name": "referrer",
         "type": "address",
         "internalType": "address"
       }
@@ -1361,6 +1448,56 @@
   },
   {
     "type": "event",
+    "name": "ReferralRewarded",
+    "inputs": [
+      {
+        "name": "roundId",
+        "type": "uint256",
+        "indexed": true,
+        "internalType": "uint256"
+      },
+      {
+        "name": "wallet",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "referrer",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "ReferrerSet",
+    "inputs": [
+      {
+        "name": "wallet",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      },
+      {
+        "name": "referrer",
+        "type": "address",
+        "indexed": true,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "RefundClaimed",
     "inputs": [
       {
@@ -1708,6 +1845,16 @@
   },
   {
     "type": "error",
+    "name": "ReferralTooLate",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "ReferrerAlreadySet",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "RefundTooEarly",
     "inputs": []
   },
@@ -1719,6 +1866,11 @@
   {
     "type": "error",
     "name": "RoundClosed",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "SelfReferral",
     "inputs": []
   },
   {
