@@ -81,6 +81,11 @@ contract PotsRoundManager is Ownable2Step, ReentrancyGuard {
     uint256 public treasuryBalance;
     uint256 public totalDust;
 
+    /// @notice The plan contract allowed to call enterFor and claimEthToPlan. Set once.
+    address public planContract;
+    /// @notice A wallet's own permission for the plan contract to move its ETH winnings into its plan.
+    mapping(address => bool) public planClaimConsent;
+
     error NotOpen();
     error RoundClosed();
     error InvalidSquares();
@@ -104,6 +109,10 @@ contract PotsRoundManager is Ownable2Step, ReentrancyGuard {
     error ZeroAddress();
     error InvalidDelay();
     error RenounceDisabled();
+    error NotPlanContract();
+    error PlanContractAlreadySet();
+    error NoClaimConsent();
+    error PlanContractNotSet();
 
     event RoundOpened(uint256 indexed roundId, uint256 rolloverIn);
     event EntryPlaced(
@@ -139,6 +148,8 @@ contract PotsRoundManager is Ownable2Step, ReentrancyGuard {
     event TreasuryWithdrawn(address indexed to, uint256 amount);
     event TreasuryFunded(address indexed from, uint256 amount);
     event PausedSet(bool paused);
+    event PlanContractSet(address indexed plan);
+    event PlanClaimConsentSet(address indexed wallet, bool allowed);
 
     constructor(
         address token_,
@@ -221,6 +232,10 @@ contract PotsRoundManager is Ownable2Step, ReentrancyGuard {
     /// @notice Opens the next round in WAITING, carrying the rollover balance.
     /// @dev Permissionless. Requires the previous round to be SETTLED or CANCELLED.
     function startNextRound() external {
+        _startNextRound();
+    }
+
+    function _startNextRound() internal returns (uint256 next) {
         uint256 previous = currentRoundId;
         if (previous != 0) {
             Phase previousPhase = rounds[previous].phase;
@@ -228,7 +243,7 @@ contract PotsRoundManager is Ownable2Step, ReentrancyGuard {
                 revert WrongPhase();
             }
         }
-        uint256 next = previous + 1;
+        next = previous + 1;
         currentRoundId = next;
         Round storage round = rounds[next];
         round.phase = Phase.WAITING;
@@ -237,12 +252,37 @@ contract PotsRoundManager is Ownable2Step, ReentrancyGuard {
     }
 
     /// @notice Places the same amount on each listed square (1 to 25, no duplicates).
-    /// @dev The first entry opens the round and sets its deadline. msg.value must equal
+    /// @dev The first entry opens the round and sets its deadline. When the previous round is
+    /// SETTLED or CANCELLED (or none exists) the next round is started first. msg.value must equal
     /// squareIds.length * amountPerSquare. Reverts when paused or after the deadline.
     function enter(uint8[] calldata squareIds, uint256 amountPerSquare)
         external
         payable
         nonReentrant
+    {
+        _enter(msg.sender, squareIds, amountPerSquare);
+    }
+
+    /// @notice Same as `enter`, for another wallet, funded by msg.value.
+    /// @dev Only the registered plan contract. The entry, the claim, and the events belong to `wallet`.
+    function enterFor(address wallet, uint8[] calldata squareIds, uint256 amountPerSquare)
+        external
+        payable
+        nonReentrant
+        returns (uint256)
+    {
+        if (msg.sender != planContract) {
+            revert NotPlanContract();
+        }
+        if (wallet == address(0)) {
+            revert ZeroAddress();
+        }
+        return _enter(wallet, squareIds, amountPerSquare);
+    }
+
+    function _enter(address wallet, uint8[] calldata squareIds, uint256 amountPerSquare)
+        internal
+        returns (uint256 roundId)
     {
         if (paused) {
             revert ContractPaused();
@@ -261,7 +301,11 @@ contract PotsRoundManager is Ownable2Step, ReentrancyGuard {
             revert ValueMismatch();
         }
 
-        uint256 roundId = currentRoundId;
+        roundId = currentRoundId;
+        Phase currentPhase = rounds[roundId].phase;
+        if (roundId == 0 || currentPhase == Phase.SETTLED || currentPhase == Phase.CANCELLED) {
+            roundId = _startNextRound();
+        }
         Round storage round = rounds[roundId];
         if (round.phase == Phase.WAITING) {
             round.phase = Phase.OPEN;
@@ -284,15 +328,15 @@ contract PotsRoundManager is Ownable2Step, ReentrancyGuard {
                     revert InvalidSquares();
                 }
             }
-            entries[roundId][square][msg.sender] += amountPerSquare;
+            entries[roundId][square][wallet] += amountPerSquare;
             squareTotals[roundId][square] += amountPerSquare;
             total += amountPerSquare;
         }
 
         round.totalEth += total;
-        walletRounds[roundId][msg.sender].deposited += total;
+        walletRounds[roundId][wallet].deposited += total;
         totalUnsettledDeposits += total;
-        emit EntryPlaced(roundId, msg.sender, squareIds, amountPerSquare, total);
+        emit EntryPlaced(roundId, wallet, squareIds, amountPerSquare, total);
     }
 
     /// @notice Locks an OPEN round once its deadline has passed and records the lock time.
@@ -471,19 +515,47 @@ contract PotsRoundManager is Ownable2Step, ReentrancyGuard {
     /// @notice Pulls the caller's ETH payout for a settled round, or the refund for a cancelled one.
     /// @dev Sets the claimed flag before sending ETH. A failing transfer reverts only this claim.
     function claimEth(uint256 roundId) external nonReentrant {
+        uint256 owed = _claimEth(roundId, msg.sender);
+        (bool ok,) = msg.sender.call{ value: owed }("");
+        if (!ok) {
+            revert TransferFailed();
+        }
+    }
+
+    /// @notice Like `claimEth` for `wallet`, but the ETH goes to the plan contract (loop).
+    /// @dev Only the registered plan contract, and only when the wallet allowed it with
+    /// `setPlanClaimConsent`. Returns the amount sent.
+    function claimEthToPlan(uint256 roundId, address wallet)
+        external
+        nonReentrant
+        returns (uint256 owed)
+    {
+        if (msg.sender != planContract) {
+            revert NotPlanContract();
+        }
+        if (!planClaimConsent[wallet]) {
+            revert NoClaimConsent();
+        }
+        owed = _claimEth(roundId, wallet);
+        (bool ok,) = msg.sender.call{ value: owed }("");
+        if (!ok) {
+            revert TransferFailed();
+        }
+    }
+
+    function _claimEth(uint256 roundId, address wallet) internal returns (uint256 owed) {
         Round storage round = rounds[roundId];
-        WalletRound storage walletRound = walletRounds[roundId][msg.sender];
+        WalletRound storage walletRound = walletRounds[roundId][wallet];
         if (walletRound.ethClaimed) {
             revert AlreadyClaimed();
         }
 
-        uint256 owed;
         bool isRefund = false;
         if (round.phase == Phase.CANCELLED) {
             owed = walletRound.deposited;
             isRefund = true;
         } else if (round.phase == Phase.SETTLED) {
-            uint256 entry = entries[roundId][round.winningSquare][msg.sender];
+            uint256 entry = entries[roundId][round.winningSquare][wallet];
             if (entry == 0) {
                 revert NothingToClaim();
             }
@@ -498,16 +570,36 @@ contract PotsRoundManager is Ownable2Step, ReentrancyGuard {
 
         walletRound.ethClaimed = true;
         totalUnclaimedEth -= owed;
-        emit RewardAllocated(roundId, msg.sender, owed, 0);
+        emit RewardAllocated(roundId, wallet, owed, 0);
         if (isRefund) {
-            emit RefundClaimed(roundId, msg.sender, owed);
+            emit RefundClaimed(roundId, wallet, owed);
         } else {
-            emit RewardClaimed(roundId, msg.sender, CLAIM_KIND_ETH, owed);
+            emit RewardClaimed(roundId, wallet, CLAIM_KIND_ETH, owed);
         }
-        (bool ok,) = msg.sender.call{ value: owed }("");
-        if (!ok) {
-            revert TransferFailed();
+    }
+
+    /// @notice Registers the plan contract once. There is no way to change or clear it.
+    /// @dev Owner only.
+    function setPlanContract(address plan) external onlyOwner {
+        if (plan == address(0)) {
+            revert ZeroAddress();
         }
+        if (planContract != address(0)) {
+            revert PlanContractAlreadySet();
+        }
+        planContract = plan;
+        emit PlanContractSet(plan);
+    }
+
+    /// @notice The caller allows (or stops allowing) the plan contract to move its ETH winnings
+    /// into its plan balance. Claims by hand are never blocked. Consent can be given only after the
+    /// plan contract is registered, so the wallet always knows who it is allowing.
+    function setPlanClaimConsent(bool allowed) external {
+        if (allowed && planContract == address(0)) {
+            revert PlanContractNotSet();
+        }
+        planClaimConsent[msg.sender] = allowed;
+        emit PlanClaimConsentSet(msg.sender, allowed);
     }
 
     /// @notice Mints the caller's POTS share for a settled round.

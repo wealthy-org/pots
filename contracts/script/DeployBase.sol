@@ -4,6 +4,7 @@ pragma solidity ^0.8.30;
 import { Script } from "forge-std/Script.sol";
 import { POTSToken } from "../src/POTSToken.sol";
 import { PotsRandomnessAdapter } from "../src/PotsRandomnessAdapter.sol";
+import { PotsAutoPlan } from "../src/PotsAutoPlan.sol";
 import { PotsRoundManager } from "../src/PotsRoundManager.sol";
 
 abstract contract DeployBase is Script {
@@ -21,6 +22,17 @@ abstract contract DeployBase is Script {
         address provider = vm.parseJsonAddress(json, ".randomness.diceProvider");
         uint32 gasLimit = uint32(vm.parseJsonUint(json, ".randomness.callbackGasLimit"));
         return new PotsRandomnessAdapter(coordinator, provider, gasLimit, owner);
+    }
+
+    function _deployPlan(string memory json, PotsRoundManager manager)
+        internal
+        returns (PotsAutoPlan)
+    {
+        return new PotsAutoPlan(
+            manager,
+            vm.parseJsonUint(json, ".plan.maxActivePlans"),
+            vm.parseJsonUint(json, ".plan.minPlanDepositWei")
+        );
     }
 
     function _deployManager(string memory json, address token, address adapter, address owner)

@@ -6,6 +6,7 @@ import { POTSToken } from "../../src/POTSToken.sol";
 import { PotsRandomnessAdapter } from "../../src/PotsRandomnessAdapter.sol";
 import { PotsRoundManager } from "../../src/PotsRoundManager.sol";
 import { MockDiceCoordinator } from "../mocks/MockDiceCoordinator.sol";
+import { MockPlan } from "../mocks/MockPlan.sol";
 
 contract AccountingHandler is Test {
     address internal constant DICE_PROVIDER = address(0xD1CE);
@@ -15,6 +16,7 @@ contract AccountingHandler is Test {
     PotsRoundManager public manager;
     MockDiceCoordinator public dice;
     address[] public actors;
+    MockPlan public plan;
 
     constructor() {
         dice = new MockDiceCoordinator(DICE_PROVIDER);
@@ -44,6 +46,8 @@ contract AccountingHandler is Test {
             actors.push(actor);
             vm.deal(actor, 1_000 ether);
         }
+        plan = new MockPlan(manager);
+        manager.setPlanContract(address(plan));
         manager.startNextRound();
         vm.deal(address(this), 100 ether);
         manager.fundTreasury{ value: 5 ether }();
@@ -115,6 +119,32 @@ contract AccountingHandler is Test {
         }
         vm.prank(actor);
         manager.claimEth(roundId);
+    }
+
+    /// @dev An entry for an actor through the plan contract (v3 `enterFor`). A closed round is skipped.
+    function enterViaPlan(uint256 actorSeed, uint8 squareSeed, uint96 amountSeed) external {
+        address actor = actors[actorSeed % actors.length];
+        uint8[] memory squares = new uint8[](1);
+        squares[0] = uint8(squareSeed % 25) + 1;
+        uint256 amount = bound(amountSeed, 0.001 ether, 0.1 ether);
+        try plan.enterFor{ value: amount }(actor, squares, amount) { } catch { }
+    }
+
+    /// @dev A claim moved into the plan contract (v3 `claimEthToPlan`) after the actor's consent.
+    function claimViaPlan(uint256 actorSeed, uint256 roundSeed) external {
+        address actor = actors[actorSeed % actors.length];
+        uint256 current = manager.currentRoundId();
+        if (current == 0) {
+            return;
+        }
+        uint256 roundId = (roundSeed % current) + 1;
+        (uint256 eth,) = manager.getClaimable(roundId, actor);
+        if (eth == 0) {
+            return;
+        }
+        vm.prank(actor);
+        manager.setPlanClaimConsent(true);
+        plan.claimToPlan(roundId, actor);
     }
 
     function refundAndCancel(uint256 roundsBack) external {

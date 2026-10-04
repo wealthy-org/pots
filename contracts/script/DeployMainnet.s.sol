@@ -6,16 +6,20 @@ import { DeployBase } from "./DeployBase.sol";
 import { IDiceEntropy } from "../src/interfaces/IDiceEntropy.sol";
 import { POTSToken } from "../src/POTSToken.sol";
 import { PotsRandomnessAdapter } from "../src/PotsRandomnessAdapter.sol";
+import { PotsAutoPlan } from "../src/PotsAutoPlan.sol";
 import { PotsRoundManager } from "../src/PotsRoundManager.sol";
 
 /// @notice Mainnet deployment. Run it first against a fork of chain 4663 without `--broadcast`.
 /// @dev Environment: `MAINNET_OWNER` (the multisig contract that will own the manager) and an
 /// optional `MAINNET_TREASURY_SEED_WEI`. The deployer owns the token and the adapter only until
 /// the wiring is done, then renounces both: neither keeps any power after `setMinter` and
-/// `setManager`, so the manager owner is the only privileged role left.
+/// `setManager`, so the manager owner is the only privileged role left. The plan contract has no
+/// owner. The manager is owned by the multisig from its construction, so the multisig registers the
+/// plan contract afterwards with `setPlanContract` (once); until then no plan can be created.
 contract DeployMainnet is DeployBase {
     uint256 internal constant MAINNET_CHAIN_ID = 4663;
     uint256 internal constant MAX_SANE_FEE = 0.001 ether;
+    uint256 internal constant MAX_SANE_ACTIVE_PLANS = 1000;
 
     struct Plan {
         string json;
@@ -35,6 +39,7 @@ contract DeployMainnet is DeployBase {
         PotsRandomnessAdapter adapter = _deployAdapter(plan.json, plan.coordinator, deployer);
         PotsRoundManager manager =
             _deployManager(plan.json, address(token), address(adapter), plan.multisig);
+        PotsAutoPlan autoPlan = _deployPlan(plan.json, manager);
         token.setMinter(address(manager));
         adapter.setManager(address(manager));
         token.renounceOwnership();
@@ -44,12 +49,14 @@ contract DeployMainnet is DeployBase {
         }
         _stopBroadcast();
 
-        _assertDeployment(plan, token, adapter, manager);
+        _assertDeployment(plan, token, adapter, manager, autoPlan);
 
         console2.log("POTSToken", address(token));
         console2.log("PotsRandomnessAdapter", address(adapter));
         console2.log("PotsRoundManager", address(manager));
+        console2.log("PotsAutoPlan", address(autoPlan));
         console2.log("Manager owner", manager.owner());
+        console2.log("Next: the multisig calls setPlanContract(PotsAutoPlan) on the manager, once");
         console2.log(
             "Next: take the manager creation receipt blockNumber (the chain height, not block.number) for the app and indexer start block"
         );
@@ -92,6 +99,16 @@ contract DeployMainnet is DeployBase {
             vm.parseJsonUint(plan.json, ".entry.maxPerSquareWei") > 0,
             "DeployMainnet: max entry must be set"
         );
+        uint256 maxActivePlans = vm.parseJsonUint(plan.json, ".plan.maxActivePlans");
+        require(
+            maxActivePlans > 0 && maxActivePlans <= MAX_SANE_ACTIVE_PLANS,
+            "DeployMainnet: max active plans out of range"
+        );
+        require(
+            vm.parseJsonUint(plan.json, ".plan.minPlanDepositWei")
+                >= vm.parseJsonUint(plan.json, ".entry.minPerSquareWei"),
+            "DeployMainnet: plan deposit below one entry"
+        );
     }
 
     /// @dev An EOA that delegated through EIP-7702 holds a 23 byte designator that starts with
@@ -109,7 +126,8 @@ contract DeployMainnet is DeployBase {
         Plan memory plan,
         POTSToken token,
         PotsRandomnessAdapter adapter,
-        PotsRoundManager manager
+        PotsRoundManager manager,
+        PotsAutoPlan autoPlan
     ) internal view {
         string memory json = plan.json;
         require(token.minter() == address(manager), "wiring: token minter");
@@ -166,6 +184,16 @@ contract DeployMainnet is DeployBase {
                 == vm.parseJsonUint(json, ".randomness.refundDelayBlocks"),
             "params: refund delay"
         );
+        require(address(autoPlan.manager()) == address(manager), "plan: manager");
+        require(
+            autoPlan.maxActivePlans() == vm.parseJsonUint(json, ".plan.maxActivePlans"),
+            "params: max active plans"
+        );
+        require(
+            autoPlan.minPlanDeposit() == vm.parseJsonUint(json, ".plan.minPlanDepositWei"),
+            "params: min plan deposit"
+        );
+        require(manager.planContract() == address(0), "plan: registered before the multisig");
         require(manager.treasuryBalance() == plan.seed, "treasury: seed");
         require(manager.invariantHolds(), "accounting: invariant");
         require(manager.paused() == false, "state: paused");

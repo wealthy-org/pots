@@ -6,6 +6,7 @@ import { DeployMainnet } from "../script/DeployMainnet.s.sol";
 import { MockDiceCoordinator } from "./mocks/MockDiceCoordinator.sol";
 import { POTSToken } from "../src/POTSToken.sol";
 import { PotsRandomnessAdapter } from "../src/PotsRandomnessAdapter.sol";
+import { PotsAutoPlan } from "../src/PotsAutoPlan.sol";
 import { PotsRoundManager } from "../src/PotsRoundManager.sol";
 
 /// @dev Test harness: owner and seed come from fields, not from the shared process environment.
@@ -121,6 +122,21 @@ contract DeployMainnetScriptTest is Test {
         assertEq(manager.currentRoundId(), 0);
     }
 
+    function test_script_deploysThePlanContract_andLeavesItsRegistrationToTheMultisig() public {
+        _run();
+        PotsRoundManager manager = _findManager();
+        PotsAutoPlan autoPlan = _findPlan();
+
+        assertEq(address(autoPlan.manager()), address(manager));
+        assertEq(autoPlan.maxActivePlans(), 100);
+        assertEq(autoPlan.minPlanDeposit(), 0.01 ether);
+        assertEq(manager.planContract(), address(0));
+
+        vm.prank(multisig);
+        manager.setPlanContract(address(autoPlan));
+        assertEq(manager.planContract(), address(autoPlan));
+    }
+
     function test_script_seedsTheTreasuryWhenAsked() public {
         script.configure(multisig, 0.1 ether);
         _run();
@@ -128,6 +144,10 @@ contract DeployMainnetScriptTest is Test {
         assertEq(manager.treasuryBalance(), 0.1 ether);
         assertEq(address(manager).balance, 0.1 ether);
         assertTrue(manager.invariantHolds());
+    }
+
+    function _findPlan() internal view returns (PotsAutoPlan) {
+        return PotsAutoPlan(payable(computeCreateAddress(deployer, nonceBefore + 4)));
     }
 
     /// @dev The script logs addresses but does not return them; token, adapter, and manager are the deployer's next three creations, at nonce offsets 1 to 3.

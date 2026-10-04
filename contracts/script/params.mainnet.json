@@ -21,6 +21,10 @@
   "jackpot": {
     "chanceDenominator": 625
   },
+  "plan": {
+    "maxActivePlans": 100,
+    "minPlanDepositWei": "10000000000000000"
+  },
   "emission": {
     "perRoundWei": "1000000000000000000"
   },

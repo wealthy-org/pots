@@ -21,6 +21,10 @@
   "jackpot": {
     "chanceDenominator": 625
   },
+  "plan": {
+    "maxActivePlans": 100,
+    "minPlanDepositWei": "1000000000000000"
+  },
   "emission": {
     "perRoundWei": "1000000000000000000"
   },
@@ -36,6 +40,7 @@
     "token.cap: pending owner decision (D-02)",
     "entry.maxPerSquareWei: provisional testnet value; D-01 open",
     "emission.perRoundWei: 1 POTS per eligible round approved; reserve or mint model pending (D-02)",
-    "round.lockedCancelDelaySeconds and round.forceCancelDelaySeconds: provisional escape delays for a stuck round (L-101, L-102); owner to confirm"
+    "round.lockedCancelDelaySeconds and round.forceCancelDelaySeconds: provisional escape delays for a stuck round (L-101, L-102); owner to confirm",
+    "plan.maxActivePlans and plan.minPlanDepositWei: starting values approved on 2026-10-03 (Q-9-2); final after the testnet v3 rehearsal"
   ]
 }
