@@ -16,6 +16,9 @@ export type KeeperChainState = {
   randomnessFee: bigint
   refundWindowOpen: boolean
   keeperBalance: bigint
+  /** Plan positions still to visit for this round; absent or 0 when the plan feature is off. */
+  planPending?: bigint
+  activePlanCount?: bigint
 }
 
 export interface KeeperChain {
@@ -54,6 +57,8 @@ export type KeeperReport = {
   actions: KeeperActionResult[]
   alerts: ReportAlert[]
   keeperBalanceWei?: string
+  /** Present only while plans exist. */
+  plans?: { active: string; pending: string }
   at: string
 }
 
@@ -71,6 +76,8 @@ export type KeeperRunOptions = {
 
 // Only sends count toward a cap; reads and reveal polls are bounded by the time budget.
 const MAX_SENDS = 6
+// Plan batches are separate sends: 100 plans need 5 calls of 20, on top of the round transitions.
+const MAX_PLAN_SENDS = 6
 const MAX_ITERATIONS = 40
 /** A send needs room for the simulation, the broadcast, and the receipt. Below this the call stops. */
 const SEND_RESERVE_MS = 8_000
@@ -89,10 +96,20 @@ function phaseName(phase: number): string {
   return PHASE_NAMES[phase] ?? 'UNKNOWN'
 }
 
-function describeState(state: KeeperChainState): Pick<KeeperReport, 'round' | 'keeperBalanceWei'> {
+function describeState(
+  state: KeeperChainState,
+): Pick<KeeperReport, 'round' | 'keeperBalanceWei' | 'plans'> {
   return {
     round: { id: state.roundId.toString(), phase: phaseName(state.phase) },
     keeperBalanceWei: state.keeperBalance.toString(),
+    ...((state.activePlanCount ?? 0n) > 0n
+      ? {
+          plans: {
+            active: (state.activePlanCount ?? 0n).toString(),
+            pending: (state.planPending ?? 0n).toString(),
+          },
+        }
+      : {}),
   }
 }
 
@@ -117,8 +134,10 @@ export async function runKeeper(
   let last: KeeperChainState | undefined
   let revertedAction: KeeperAction | undefined
   let sends = 0
+  let planSends = 0
+  let pendingBeforePlanSend: bigint | undefined
 
-  for (let iteration = 0; iteration < MAX_ITERATIONS && sends < MAX_SENDS; iteration += 1) {
+  for (let iteration = 0; iteration < MAX_ITERATIONS; iteration += 1) {
     let state: KeeperChainState
     try {
       state = await chain.readState()
@@ -132,14 +151,33 @@ export async function runKeeper(
     if (decision.action && decision.action === revertedAction) {
       break
     }
+    if (decision.action === 'executePlans') {
+      // A batch that visited nothing (the manager is paused, the round closed) would repeat forever.
+      const pending = state.planPending ?? 0n
+      if (planSends >= MAX_PLAN_SENDS) {
+        break
+      }
+      if (pendingBeforePlanSend !== undefined && pending >= pendingBeforePlanSend) {
+        break
+      }
+      pendingBeforePlanSend = pending
+    } else if (sends >= MAX_SENDS) {
+      break
+    }
 
     const budgetLeft = options.budgetMs - (clock.now() - started)
     if (decision.action && budgetLeft > SEND_RESERVE_MS) {
-      sends += 1
+      if (decision.action === 'executePlans') {
+        planSends += 1
+      } else {
+        sends += 1
+      }
       try {
         const sent = await chain.send(decision.action, state.roundId, budgetLeft - SEND_MARGIN_MS)
         actions.push({ name: decision.action, ok: true, txHash: sent.txHash })
         revertedAction = undefined
+        // A round transition starts a new pass: the plan count of the next round is a fresh one.
+        if (decision.action !== 'executePlans') pendingBeforePlanSend = undefined
         continue
       } catch (error) {
         const kind = error instanceof KeeperChainError ? error.kind : 'rpc_error'

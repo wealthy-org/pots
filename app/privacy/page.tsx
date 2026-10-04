@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { InfoPage, InfoSection } from '@/components/layout/info-page'
+import { v3Enabled } from '@/lib/contracts'
 
 export const metadata: Metadata = { title: 'Privacy | POTS' }
 
@@ -13,7 +14,10 @@ export default function PrivacyPage() {
         <p>
           The app has no accounts and does not ask for a name, an email, or any personal data. Your
           wallet connection state is kept in your browser local storage so that you stay connected
-          between visits.
+          between visits.{' '}
+          {v3Enabled
+            ? 'If you open a referral link, the referrer address from the link is also kept there until you deploy for the first time.'
+            : null}
         </p>
       </InfoSection>
       <InfoSection title="What is public">

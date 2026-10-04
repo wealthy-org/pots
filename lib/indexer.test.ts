@@ -326,3 +326,90 @@ describe('round consistency', () => {
     expect(mod.indexerKnowsCurrentRound(0n, [1n])).toBe(false)
   })
 })
+
+describe('leaderboard and referral earnings', () => {
+  const fetchMock = vi.fn()
+
+  beforeEach(() => {
+    fetchMock.mockReset()
+    vi.stubGlobal('fetch', fetchMock)
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
+  })
+
+  it('reads the leaderboard with exact values and the freshness of the indexer', async () => {
+    const mod = await loadIndexer()
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        data: {
+          chain_metadata: chainMetadata,
+          WalletStats: [
+            {
+              id: '0xaaa',
+              roundsPlayed: 3,
+              ethDeployed: '2500000000000000000',
+              potsClaimed: '3000000000000000000',
+            },
+            { id: '0xbbb', roundsPlayed: '1', ethDeployed: '1', potsClaimed: '1' },
+          ],
+        },
+      }),
+    )
+    const result = await mod.fetchLeaderboard(10)
+    expect(result.lastIndexedBlock).toBe(500n)
+    expect(result.rows).toEqual([
+      {
+        wallet: '0xaaa',
+        roundsPlayed: 3,
+        ethDeployed: 2500000000000000000n,
+        potsClaimed: 3000000000000000000n,
+      },
+      { wallet: '0xbbb', roundsPlayed: 1, ethDeployed: 1n, potsClaimed: 1n },
+    ])
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body as string)
+    expect(body.variables).toEqual({ limit: 10, min: '0' })
+  })
+
+  it('reads referral earnings, and zero for a wallet with no row', async () => {
+    const mod = await loadIndexer()
+    fetchMock
+      .mockResolvedValueOnce(
+        jsonResponse({
+          data: {
+            chain_metadata: chainMetadata,
+            WalletStats_by_pk: { referrals: 2, referralPots: '20000000000000000' },
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({ data: { chain_metadata: chainMetadata, WalletStats_by_pk: null } }),
+      )
+    const wallet = '0xABCDEFabcdefABCDEFabcdefABCDEFabcdefABCD'
+    expect((await mod.fetchReferralEarnings(wallet)).earnings).toEqual({
+      referrals: 2,
+      referralPots: 20000000000000000n,
+    })
+    expect((await mod.fetchReferralEarnings(wallet)).earnings).toEqual({
+      referrals: 0,
+      referralPots: 0n,
+    })
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body as string)
+    expect(body.variables.wallet).toBe(wallet.toLowerCase())
+  })
+
+  it('rejects a leaderboard row with an unreadable number', async () => {
+    const mod = await loadIndexer()
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        data: {
+          chain_metadata: chainMetadata,
+          WalletStats: [{ id: '0xaaa', roundsPlayed: 1, ethDeployed: 'x', potsClaimed: '1' }],
+        },
+      }),
+    )
+    await expect(mod.fetchLeaderboard(5)).rejects.toMatchObject({ kind: 'terminal' })
+  })
+})

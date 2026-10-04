@@ -325,3 +325,78 @@ export async function fetchLastJackpotRound(): Promise<bigint | null> {
   const [first] = asArray(data.Round)
   return first === undefined ? null : toBigInt(asRecord(first).id)
 }
+
+export const LEADERBOARD_LIMIT = 50
+
+export type LeaderboardRow = {
+  wallet: string
+  roundsPlayed: number
+  ethDeployed: bigint
+  potsClaimed: bigint
+}
+
+export type ReferralEarnings = {
+  referrals: number
+  referralPots: bigint
+}
+
+const LEADERBOARD_QUERY = `
+query Leaderboard($limit: Int!, $min: numeric!) {
+  chain_metadata { block_height latest_processed_block }
+  WalletStats(
+    where: { potsClaimed: { _gt: $min } }
+    order_by: [{ potsClaimed: desc }, { ethDeployed: desc }, { id: asc }]
+    limit: $limit
+  ) {
+    id
+    roundsPlayed
+    ethDeployed
+    potsClaimed
+  }
+}`
+
+const REFERRAL_EARNINGS_QUERY = `
+query ReferralEarnings($wallet: String!) {
+  chain_metadata { block_height latest_processed_block }
+  WalletStats_by_pk(id: $wallet) {
+    referrals
+    referralPots
+  }
+}`
+
+/** All-time ranking by POTS mined (claimed rewards). Referral bonuses are shown apart, not ranked. */
+export async function fetchLeaderboard(
+  limit: number = LEADERBOARD_LIMIT,
+): Promise<{ rows: LeaderboardRow[]; lastIndexedBlock: bigint; indexerHead: bigint }> {
+  const data = await queryIndexer(LEADERBOARD_QUERY, { limit, min: '0' })
+  const freshness = readChainFreshness(data)
+  const rows = asArray(data.WalletStats)
+    .map(asRecord)
+    .map((row): LeaderboardRow => ({
+      wallet: String(row.id),
+      roundsPlayed: Number(toBigInt(row.roundsPlayed)),
+      ethDeployed: toBigInt(row.ethDeployed),
+      potsClaimed: toBigInt(row.potsClaimed),
+    }))
+  return { rows, ...freshness }
+}
+
+/** What a wallet earned as a referrer: wallets tagged to it and the POTS bonus minted to it. */
+export async function fetchReferralEarnings(
+  wallet: string,
+): Promise<{ earnings: ReferralEarnings; lastIndexedBlock: bigint; indexerHead: bigint }> {
+  const data = await queryIndexer(REFERRAL_EARNINGS_QUERY, { wallet: wallet.toLowerCase() })
+  const freshness = readChainFreshness(data)
+  const row = data.WalletStats_by_pk
+  if (row === null || row === undefined) {
+    return { earnings: { referrals: 0, referralPots: 0n }, ...freshness }
+  }
+  const record = asRecord(row)
+  return {
+    earnings: {
+      referrals: Number(toBigInt(record.referrals)),
+      referralPots: toBigInt(record.referralPots),
+    },
+    ...freshness,
+  }
+}

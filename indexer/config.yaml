@@ -17,6 +17,8 @@ contracts:
       - event: 'JackpotPaid(uint256 indexed roundId, uint256 amount)'
       - event: 'RoundCancelled(uint256 indexed roundId)'
       - event: 'RefundClaimed(uint256 indexed roundId, address indexed wallet, uint256 amount)'
+      - event: 'ReferrerSet(address indexed wallet, address indexed referrer)'
+      - event: 'ReferralRewarded(uint256 indexed roundId, address indexed wallet, address indexed referrer, uint256 amount)'
 address_format: lowercase
 chains:
   - id: 46630

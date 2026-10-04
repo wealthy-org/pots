@@ -3,7 +3,14 @@
 import { useReadContract } from 'wagmi'
 import { LeadStat } from '@/components/ui/lead-stat'
 import { Panel } from '@/components/ui/panel'
-import { managerAddress, potsTokenAbi, roundManagerAbi, tokenAddress } from '@/lib/contracts'
+import { BurnPanel } from '@/components/token/burn-panel'
+import {
+  managerAddress,
+  potsTokenAbi,
+  roundManagerAbi,
+  tokenAddress,
+  v3Enabled,
+} from '@/lib/contracts'
 import { formatWeiToEth } from '@/lib/wei'
 
 function readPots(read: { data: unknown; isError: boolean }, decimals: number): string {
@@ -26,6 +33,12 @@ export default function TokenPage() {
     abi: potsTokenAbi,
     functionName: 'totalSupply',
   })
+  const totalMinted = useReadContract({
+    address: tokenAddress,
+    abi: potsTokenAbi,
+    functionName: 'totalMinted',
+    query: { enabled: v3Enabled },
+  })
   const emission = useReadContract({
     address: managerAddress,
     abi: roundManagerAbi,
@@ -35,6 +48,7 @@ export default function TokenPage() {
   const emissionValue = readPots(emission, 4)
   const totalSupplyValue = readPots(totalSupply, 4)
   const capValue = readPots(cap, 2)
+  const mintedValue = readPots(totalMinted, 4)
 
   return (
     <section aria-labelledby="token-title" className="flex flex-col gap-4">
@@ -54,6 +68,7 @@ export default function TokenPage() {
           <Fact label="Name" value={(name.data as string | undefined) ?? '...'} />
           <Fact label="Symbol" value={(symbol.data as string | undefined) ?? '...'} />
           <Fact label="Emission per eligible round" value={emissionValue} />
+          {v3Enabled ? <Fact label="Total ever minted" value={mintedValue} /> : null}
           <Fact label="Cap" value={capValue} />
           <Fact label="Chain ID" value={process.env.NEXT_PUBLIC_ROBINHOOD_CHAIN_ID ?? '46630'} />
         </dl>
@@ -65,10 +80,20 @@ export default function TokenPage() {
         </h2>
         <p className="mt-2 font-mono text-xs break-all text-text">{tokenAddress}</p>
         <p className="mt-2 text-xs text-text-2">
-          The cap is 1,000,000,000 POTS and the manager mints 1 POTS per settled round that has
-          miners on the winning block. At that pace the cap is not reached in practice.
+          {v3Enabled
+            ? 'The cap is 1,000,000,000 POTS and is counted on the amount ever minted, so a burn never reopens room under it. The manager mints 1 POTS per settled round that has miners on the winning block, plus a 1% referral bonus when a referred wallet claims. At that pace the cap is not reached in practice.'
+            : 'The cap is 1,000,000,000 POTS and the manager mints 1 POTS per settled round that has miners on the winning block. At that pace the cap is not reached in practice.'}
         </p>
       </Panel>
+      {v3Enabled ? (
+        <BurnPanel
+          totalSupply={totalSupply.data as bigint | undefined}
+          totalMinted={totalMinted.data as bigint | undefined}
+          onBurned={() => {
+            void totalSupply.refetch()
+          }}
+        />
+      ) : null}
     </section>
   )
 }

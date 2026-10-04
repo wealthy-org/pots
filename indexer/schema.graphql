@@ -92,3 +92,30 @@ type ProtocolStats {
   uniqueWallets: BigInt!
   lastIndexedBlock: BigInt!
 }
+
+type WalletStats {
+  id: ID!
+  roundsPlayed: Int!
+  ethDeployed: BigInt!
+  potsClaimed: BigInt!
+  referrals: Int!
+  referralPots: BigInt!
+}
+
+type Referral {
+  id: ID!
+  referrer: String!
+  blockNumber: BigInt!
+  timestamp: BigInt!
+  txHash: String!
+}
+
+type ReferralReward {
+  id: ID!
+  roundId: BigInt!
+  wallet: String!
+  referrer: String!
+  amount: BigInt!
+  timestamp: BigInt!
+  txHash: String!
+}

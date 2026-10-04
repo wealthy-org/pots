@@ -126,3 +126,18 @@ test.describe('wallet and entry', () => {
     await expect(page.getByText('Your deploy this round: 0.005 ETH')).toBeVisible()
   })
 })
+
+test.describe('plan flag unset', () => {
+  test('keeps the v2 surface: no plan controls and a plain MINE button', async ({
+    page,
+    installWallet,
+  }) => {
+    await installWallet()
+    await page.goto('/mine')
+    await connect(page)
+    await page.getByRole('button', { name: 'Auto', exact: true }).click()
+    await expect(page.getByRole('region', { name: 'Auto plan' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: /^Start auto/ })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: /^MINE/ })).toBeVisible()
+  })
+})

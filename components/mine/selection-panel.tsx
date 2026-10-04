@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { FooterLinks } from '@/components/layout/footer-links'
 import { Button } from '@/components/ui/button'
+import { PlanControls, PlanStatus, hasPlan, type AutoPlanView } from '@/components/mine/plan-panel'
 import { InputAmount } from '@/components/ui/input-amount'
 import { EthMark } from '@/components/ui/token-mark'
 import { canEnterPhase } from '@/lib/entry-phase'
@@ -82,6 +83,7 @@ export function SelectionPanel({
   roundClosed = false,
   walletAvailable = true,
   connectError = null,
+  autoPlan,
   claims = [],
   onConnect,
   onReview,
@@ -107,6 +109,8 @@ export function SelectionPanel({
   /** False when no injected wallet exists, so Connect cannot work. */
   walletAvailable?: boolean
   connectError?: string | null
+  /** The plan feature (v3). Absent means the Auto tab keeps presets only. */
+  autoPlan?: AutoPlanView
   /** When something is claimable the primary button claims it (ADR-014, D-29). */
   claims?: Array<{ label: string; onClick: () => void; disabled: boolean }>
   onConnect: () => void
@@ -120,6 +124,9 @@ export function SelectionPanel({
     (maxWei === undefined || maxWei === 0n || parsed <= maxWei)
   const total = parsed !== null && count > 0 ? multiplyWei(parsed, count) : 0n
 
+  /** The Auto tab runs a plan when the plan feature is on (the tab is otherwise presets only). */
+  const planActive = Boolean(autoPlan) && tab === 'auto' && isConnected
+  const planRunning = planActive && hasPlan(autoPlan?.plan)
   const phaseAllowsEntry = canEnterPhase(round?.phase, needsStart, roundClosed)
   const canReview = isConnected && count > 0 && amountValid && phaseAllowsEntry && !paused
 
@@ -166,7 +173,7 @@ export function SelectionPanel({
         </button>
       </div>
 
-      {tab === 'auto' ? (
+      {planRunning ? null : tab === 'auto' ? (
         <section>
           <div className="flex items-start justify-between gap-3 px-1">
             <div>
@@ -207,56 +214,70 @@ export function SelectionPanel({
         </p>
       )}
 
-      <section>
-        <InputAmount
-          label="Amount per block"
-          value={amount}
-          onValueChange={onAmountChange}
-          minWei={minWei}
-          maxWei={maxWei}
+      {planRunning ? null : (
+        <section>
+          <InputAmount
+            label="Amount per block"
+            value={amount}
+            onValueChange={onAmountChange}
+            minWei={minWei}
+            maxWei={maxWei}
+            disabled={!phaseAllowsEntry}
+          />
+          <div className="mt-2 flex items-center justify-between px-1 text-[10px] text-text-3">
+            <span>
+              Min. amount per block is{' '}
+              <span className="font-mono">
+                {minWei !== undefined ? `${formatWeiToEth(minWei)} ETH` : '-'}
+              </span>
+            </span>
+            <span>
+              Per block{' '}
+              <span className="font-mono">
+                {count > 0 && parsed !== null ? `${formatWeiToEth(parsed, 5)} ETH` : '-'}
+              </span>
+            </span>
+          </div>
+        </section>
+      )}
+
+      {planRunning ? null : (
+        <Stepper
+          count={count}
+          onAll={onSelectAll}
+          onRemove={onRemoveLast}
+          onAdd={onAddRandom}
           disabled={!phaseAllowsEntry}
         />
-        <div className="mt-2 flex items-center justify-between px-1 text-[10px] text-text-3">
-          <span>
-            Min. amount per block is{' '}
-            <span className="font-mono">
-              {minWei !== undefined ? `${formatWeiToEth(minWei)} ETH` : '-'}
-            </span>
-          </span>
-          <span>
-            Per block{' '}
-            <span className="font-mono">
-              {count > 0 && parsed !== null ? `${formatWeiToEth(parsed, 5)} ETH` : '-'}
-            </span>
-          </span>
-        </div>
-      </section>
+      )}
 
-      <Stepper
-        count={count}
-        onAll={onSelectAll}
-        onRemove={onRemoveLast}
-        onAdd={onAddRandom}
-        disabled={!phaseAllowsEntry}
-      />
+      {planActive ? (
+        hasPlan(autoPlan?.plan) && autoPlan ? (
+          <PlanStatus view={autoPlan} />
+        ) : autoPlan ? (
+          <PlanControls view={autoPlan} blocks={count} />
+        ) : null
+      ) : null}
 
-      <div className="flex flex-col gap-2 rounded-md border border-line p-3 text-sm">
-        <div className="flex justify-between text-text-2">
-          <span>Blocks</span>
-          <span className="font-mono text-text">{count} selected</span>
+      {planActive ? null : (
+        <div className="flex flex-col gap-2 rounded-md border border-line p-3 text-sm">
+          <div className="flex justify-between text-text-2">
+            <span>Blocks</span>
+            <span className="font-mono text-text">{count} selected</span>
+          </div>
+          <div className="flex justify-between text-text-2">
+            <span>Total per round</span>
+            <span className="font-mono text-text">{formatWeiToEth(total, 4)} ETH</span>
+          </div>
+          <div className="flex justify-between border-t border-line pt-2 font-semibold">
+            <span>Total</span>
+            <span className="flex items-center gap-1.5 font-mono">
+              <EthMark className="h-3.5 w-3.5" />
+              {formatWeiToEth(total, 4)} ETH
+            </span>
+          </div>
         </div>
-        <div className="flex justify-between text-text-2">
-          <span>Total per round</span>
-          <span className="font-mono text-text">{formatWeiToEth(total, 4)} ETH</span>
-        </div>
-        <div className="flex justify-between border-t border-line pt-2 font-semibold">
-          <span>Total</span>
-          <span className="flex items-center gap-1.5 font-mono">
-            <EthMark className="h-3.5 w-3.5" />
-            {formatWeiToEth(total, 4)} ETH
-          </span>
-        </div>
-      </div>
+      )}
 
       {!isConnected ? (
         <div className="flex flex-col gap-2">
@@ -289,6 +310,38 @@ export function SelectionPanel({
             </Button>
           ))}
         </div>
+      ) : planActive && autoPlan ? (
+        hasPlan(autoPlan.plan) ? (
+          <Button
+            size="lg"
+            variant="secondary"
+            className="uppercase"
+            onClick={autoPlan.onStop}
+            disabled={autoPlan.busy}
+          >
+            Stop auto
+            {autoPlan.plan && autoPlan.plan.balance > 0n ? (
+              <span className="ml-1.5 font-mono text-xs opacity-70">
+                {formatWeiToEth(autoPlan.plan.balance, 4)} ETH back
+              </span>
+            ) : null}
+          </Button>
+        ) : (
+          <Button
+            size="lg"
+            variant="primary"
+            className="uppercase"
+            onClick={autoPlan.onStart}
+            disabled={autoPlan.blockReason !== null || autoPlan.busy}
+          >
+            Start auto
+            {autoPlan.blockReason === null ? (
+              <span className="ml-1.5 font-mono text-xs opacity-70">
+                {formatWeiToEth(autoPlan.deposit, 4)} ETH
+              </span>
+            ) : null}
+          </Button>
+        )
       ) : (
         <Button
           size="lg"
@@ -305,12 +358,19 @@ export function SelectionPanel({
           ) : null}
         </Button>
       )}
-      {isConnected && claims.length === 0 && needsStart && canReview ? (
+      {planActive &&
+      claims.length === 0 &&
+      autoPlan &&
+      !hasPlan(autoPlan.plan) &&
+      autoPlan.blockReason ? (
+        <p className="text-center text-[10px] text-text-3">{autoPlan.blockReason}</p>
+      ) : null}
+      {isConnected && claims.length === 0 && !planActive && needsStart && canReview ? (
         <p className="text-center text-[10px] text-text-3">
           Starting the next round, then your deploy. Your wallet asks twice.
         </p>
       ) : null}
-      {isConnected && claims.length === 0 && disabledReason ? (
+      {isConnected && claims.length === 0 && !planActive && disabledReason ? (
         <p className="text-center text-[10px] text-text-3">{disabledReason}</p>
       ) : null}
 

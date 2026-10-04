@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import type { Address } from 'viem'
 import { useConfig, useWaitForTransactionReceipt, useWriteContract } from 'wagmi'
 import { readContract, waitForTransactionReceipt } from 'wagmi/actions'
 import { managerAddress, roundManagerAbi } from '@/lib/contracts'
@@ -61,7 +62,7 @@ export function usePotsWrites() {
      * started the round in the meantime does not cause a second start, and a start that fails
      * because the keeper won the race is followed by the deploy.
      */
-    enterAndStart: async (squares: number[], amountPerSquare: bigint) => {
+    enterAndStart: async (squares: number[], amountPerSquare: bigint, referrer?: Address) => {
       if (busy.current) {
         return
       }
@@ -99,13 +100,24 @@ export function usePotsWrites() {
         if (!mounted.current) {
           return
         }
-        write.writeContract({
-          address: managerAddress,
-          abi: roundManagerAbi,
-          functionName: 'enter',
-          args: [squares, amountPerSquare],
-          value: BigInt(squares.length) * amountPerSquare,
-        })
+        // A first deploy through a referral link tags the wallet in the same transaction.
+        write.writeContract(
+          referrer
+            ? {
+                address: managerAddress,
+                abi: roundManagerAbi,
+                functionName: 'enterWithReferrer',
+                args: [referrer, squares, amountPerSquare],
+                value: BigInt(squares.length) * amountPerSquare,
+              }
+            : {
+                address: managerAddress,
+                abi: roundManagerAbi,
+                functionName: 'enter',
+                args: [squares, amountPerSquare],
+                value: BigInt(squares.length) * amountPerSquare,
+              },
+        )
       } finally {
         busy.current = false
         if (mounted.current) {

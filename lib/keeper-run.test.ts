@@ -330,3 +330,94 @@ describe('checkKeeperStatus', () => {
     expect(report.alerts).toEqual(['rpc_error'])
   })
 })
+
+describe('runKeeper plan batches', () => {
+  /** A plan contract with `pending` positions: each executePlans call visits up to `batch`. */
+  function planChain(first: KeeperChainState, batch: bigint, visitsNothing = false) {
+    let current = first
+    const sent: KeeperAction[] = []
+    const chain: KeeperChain = {
+      async readState() {
+        return current
+      },
+      async send(action) {
+        sent.push(action)
+        if (action === 'executePlans' && !visitsNothing) {
+          const pending = current.planPending ?? 0n
+          current = { ...current, planPending: pending > batch ? pending - batch : 0n }
+        }
+        return { txHash: `0x${String(sent.length).padStart(64, '0')}` }
+      },
+    }
+    return { chain, sent }
+  }
+
+  const waiting = (planPending: bigint, activePlanCount = planPending) =>
+    state({
+      roundId: 4n,
+      phase: Phase.WAITING,
+      planPending,
+      activePlanCount,
+      keeperBalance: 10n ** 18n,
+    })
+
+  it('sends one batch per call until no plan position is left', async () => {
+    const { chain, sent } = planChain(waiting(45n), 20n)
+    const report = await runKeeper(chain, options(fakeClock()))
+    expect(sent).toEqual(['executePlans', 'executePlans', 'executePlans'])
+    expect(report.status).toBe('ok')
+    expect(report.plans).toEqual({ active: '45', pending: '0' })
+  })
+
+  it('stops when a batch visits nothing instead of repeating it', async () => {
+    const { chain, sent } = planChain(waiting(30n), 20n, true)
+    const report = await runKeeper(chain, options(fakeClock()))
+    expect(sent).toEqual(['executePlans'])
+    expect(report.plans).toEqual({ active: '30', pending: '30' })
+  })
+
+  it('caps the plan sends in one call', async () => {
+    const { chain, sent } = planChain(waiting(1_000n), 1n)
+    await runKeeper(chain, options(fakeClock()))
+    expect(sent).toHaveLength(6)
+  })
+
+  it('runs the plan pass again after a round transition in the same call', async () => {
+    let current = state({
+      roundId: 3n,
+      phase: Phase.OPEN,
+      now: 1_000n,
+      closeAt: 1_000n,
+      planPending: 1n,
+      activePlanCount: 1n,
+    })
+    const sent: KeeperAction[] = []
+    const chain: KeeperChain = {
+      async readState() {
+        return current
+      },
+      async send(action) {
+        sent.push(action)
+        if (action === 'lock') current = { ...current, phase: Phase.LOCKED, lockedAt: 1_001n }
+        if (action === 'requestRandomness') {
+          current = { ...current, phase: Phase.RANDOMNESS_PENDING, randomOutput: OUTPUT }
+        }
+        if (action === 'settle') current = { ...current, phase: Phase.SETTLED }
+        if (action === 'startNextRound') {
+          current = { ...current, roundId: 4n, phase: Phase.WAITING, planPending: 1n }
+        }
+        if (action === 'executePlans') current = { ...current, planPending: 0n }
+        return { txHash: `0x${String(sent.length).padStart(64, '0')}` }
+      },
+    }
+    const report = await runKeeper(chain, options(fakeClock()))
+    expect(sent).toEqual(['lock', 'requestRandomness', 'settle', 'startNextRound', 'executePlans'])
+    expect(report.plans).toEqual({ active: '1', pending: '0' })
+  })
+  it('does not send a plan batch when the plan feature is off', async () => {
+    const { chain, sent } = planChain(state({ phase: Phase.WAITING }), 20n)
+    const report = await runKeeper(chain, options(fakeClock()))
+    expect(sent).toEqual([])
+    expect(report.plans).toBeUndefined()
+  })
+})

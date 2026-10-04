@@ -10,18 +10,23 @@ import {
 } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import managerAbi from '../../contracts/abi/PotsRoundManager.json'
+import planAbi from '../../contracts/abi/PotsAutoPlan.json'
+import tokenV3Abi from '../../contracts/abi/POTSToken.json'
 
 export const ANVIL_PORT = 8599
 export const ANVIL_URL = `http://127.0.0.1:${ANVIL_PORT}`
 
 export const MANAGER: Address = '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9'
 export const TOKEN: Address = '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512'
+// Plan contract of the local deploy (deployer nonce 4); global-setup does not change this order.
+export const PLAN: Address = '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9'
 export const DICE: Address = '0x5FbDB2315678afecb367f032d93F642f64180aa3'
 
 // Well-known Anvil development keys (accounts 0 and 1). They hold no real funds anywhere.
 export const OWNER_KEY: Hex = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'
 export const PLAYER_KEY: Hex = '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d'
 export const PLAYER_ADDRESS: Address = privateKeyToAccount(PLAYER_KEY).address
+export const OWNER_ADDRESS: Address = privateKeyToAccount(OWNER_KEY).address
 
 // Anvil development account 2 acts as the keeper in the local suite; the secret is a test value.
 export const KEEPER_KEY: Hex = '0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a'
@@ -177,4 +182,48 @@ export async function ownerEnter(squares: number[], amountPerSquare: bigint): Pr
     chain: null,
   })
   await publicClient.waitForTransactionReceipt({ hash })
+}
+
+export const plan = {
+  write: (functionName: string, args: unknown[] = []) =>
+    ownerWrite(PLAN, planAbi, functionName, args),
+  read: (functionName: string, args: unknown[] = []): Promise<unknown> =>
+    publicClient.readContract({
+      address: PLAN,
+      abi: planAbi as never,
+      functionName: functionName as never,
+      args: args as never,
+    }) as Promise<unknown>,
+}
+
+/** A write signed by the player key (Anvil account 1) straight to a contract. */
+export async function playerWrite(
+  address: Address,
+  abi: unknown,
+  functionName: string,
+  args: unknown[] = [],
+): Promise<void> {
+  const hash = await playerWallet.writeContract({
+    address,
+    abi: abi as never,
+    functionName: functionName as never,
+    args: args as never,
+    chain: null,
+  })
+  await publicClient.waitForTransactionReceipt({ hash })
+}
+
+export const playerManager = {
+  write: (functionName: string, args: unknown[] = []) =>
+    playerWrite(MANAGER, managerAbi, functionName, args),
+}
+
+/** Reads the v3 token (`totalSupply`, `totalMinted`). */
+export function tokenRead(functionName: string, args: unknown[] = []): Promise<bigint> {
+  return publicClient.readContract({
+    address: TOKEN,
+    abi: tokenV3Abi as never,
+    functionName: functionName as never,
+    args: args as never,
+  }) as Promise<bigint>
 }

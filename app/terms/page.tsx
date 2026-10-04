@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { InfoPage, InfoSection } from '@/components/layout/info-page'
+import { autoPlanEnabled, v3Enabled } from '@/lib/contracts'
 
 export const metadata: Metadata = { title: 'Terms | POTS' }
 
@@ -34,6 +35,25 @@ export default function TermsPage() {
           and executed by the contract. Lost keys cannot be recovered by anyone.
         </p>
       </InfoSection>
+      {autoPlanEnabled ? (
+        <InfoSection title="Auto plans">
+          <p>
+            An auto plan holds the ETH you pay in the plan contract, not in the app, until each
+            round uses it or you stop the plan and take it back. The plan is a prepaid series of
+            deploys, not a savings product: the outcome of each round is random and ETH deployed on
+            blocks that do not win is not returned.
+          </p>
+        </InfoSection>
+      ) : null}
+      {v3Enabled ? (
+        <InfoSection title="Referrals and burn">
+          <p>
+            A referrer is set once and cannot be changed. The referral bonus is minted by the
+            contract as a share of a referred wallet&apos;s POTS claim and is not a payment from the
+            project. A burn of POTS is permanent and cannot be undone.
+          </p>
+        </InfoSection>
+      ) : null}
       <InfoSection title="Changes">
         <p>
           The game rules in a deployed contract cannot be changed. A new version is a new deployment

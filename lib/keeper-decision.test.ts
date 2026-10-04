@@ -215,3 +215,40 @@ describe('decideKeeperAction alerts', () => {
     }
   })
 })
+
+describe('decideKeeperAction plans', () => {
+  it('runs a plan batch while the round waits or is open before its deadline', () => {
+    expect(decideKeeperAction(input({ phase: Phase.WAITING, planPending: 5n })).action).toBe(
+      'executePlans',
+    )
+    expect(
+      decideKeeperAction(
+        input({ phase: Phase.OPEN, now: 10_000n, closeAt: 10_060n, planPending: 5n }),
+      ).action,
+    ).toBe('executePlans')
+  })
+
+  it('locks a due round before any plan batch', () => {
+    expect(
+      decideKeeperAction(
+        input({ phase: Phase.OPEN, now: 10_060n, closeAt: 10_060n, planPending: 5n }),
+      ).action,
+    ).toBe('lock')
+  })
+
+  it('does nothing for plans when no position is pending or the round is locked', () => {
+    expect(decideKeeperAction(input({ phase: Phase.WAITING, planPending: 0n })).action).toBeNull()
+    expect(
+      decideKeeperAction(input({ phase: Phase.LOCKED, lockedAt: 9_999n, planPending: 5n })).action,
+    ).toBe('requestRandomness')
+  })
+
+  it('raises the balance alert threshold by one minimum per batch of 20 active plans', () => {
+    const base = { keeperBalance: 5_000_000n, minKeeperBalance: 2_000_000n }
+    expect(decideKeeperAction(input({ ...base, activePlanCount: 0n })).alerts).toEqual([])
+    expect(decideKeeperAction(input({ ...base, activePlanCount: 20n })).alerts).toEqual([])
+    expect(decideKeeperAction(input({ ...base, activePlanCount: 21n })).alerts).toEqual([
+      'keeper_balance_low',
+    ])
+  })
+})

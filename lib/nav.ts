@@ -1,3 +1,6 @@
+import { v3Enabled } from './contracts'
+import { indexerEnabled } from './indexer'
+
 export type NavIconName =
   'mine' | 'token' | 'stats' | 'history' | 'more' | 'docs' | 'fairness' | 'contracts'
 
@@ -17,20 +20,23 @@ export const RAIL_LINKS = [
 ] as const satisfies ReadonlyArray<{ href: string; label: string; icon: NavIconName }>
 
 /** Links of the mobile "More" sheet and of the header menu below 1024 px. */
-export const MORE_LINKS = [
+export const MORE_LINKS: ReadonlyArray<{ href: string; label: string }> = [
   { href: '/profile', label: 'Profile' },
+  ...(indexerEnabled ? [{ href: '/leaderboard', label: 'Leaderboard' }] : []),
+  ...(v3Enabled ? [{ href: '/referrals', label: 'Referrals' }] : []),
   { href: '/docs', label: 'Docs' },
   { href: '/fairness', label: 'Fairness' },
   { href: '/contracts', label: 'Contracts' },
   { href: '/about', label: 'About' },
   { href: '/terms', label: 'Terms' },
   { href: '/privacy', label: 'Privacy' },
-] as const
+]
 
 /** Row under the deploy button; the 18+ notice is plain text next to it. */
-export const FOOTER_LINKS = [
+export const FOOTER_LINKS: ReadonlyArray<{ href: string; label: string }> = [
   { href: '/about', label: 'About' },
   { href: '/token', label: 'Token' },
+  ...(v3Enabled ? [{ href: '/referrals', label: 'Referrals' }] : []),
   { href: '/terms', label: 'Terms' },
   { href: '/privacy', label: 'Privacy' },
-] as const
+]

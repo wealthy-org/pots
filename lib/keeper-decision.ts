@@ -1,7 +1,7 @@
 import { Phase, ZERO_BYTES32 } from './types'
 
 export type KeeperAction =
-  'startNextRound' | 'lock' | 'requestRandomness' | 'settle' | 'refundRandomness'
+  'startNextRound' | 'lock' | 'requestRandomness' | 'settle' | 'refundRandomness' | 'executePlans'
 
 export type KeeperAlert = 'keeper_balance_low' | 'treasury_low' | 'round_stalled' | 'unknown_phase'
 
@@ -21,12 +21,19 @@ export type KeeperInput = {
   refundWindowOpen: boolean
   keeperBalance: bigint
   minKeeperBalance: bigint
+  /** Positions of the plan contract still to visit this round (nextCursor); 0 or absent when off. */
+  planPending?: bigint
+  /** Active plans; each batch of 20 raises the balance the keeper account should hold (L-114). */
+  activePlanCount?: bigint
 }
 
 export type KeeperDecision = {
   action: KeeperAction | null
   alerts: KeeperAlert[]
 }
+
+/** Plans visited per call of the plan contract (its MAX_BATCH). */
+const PLAN_BATCH = 20n
 
 const KNOWN_PHASES: number[] = [
   Phase.NONE,
@@ -47,7 +54,8 @@ export function decideKeeperAction(input: KeeperInput): KeeperDecision {
   const alerts: KeeperAlert[] = []
   let action: KeeperAction | null = null
 
-  if (input.keeperBalance < input.minKeeperBalance) {
+  const planBatches = ((input.activePlanCount ?? 0n) + PLAN_BATCH - 1n) / PLAN_BATCH
+  if (input.keeperBalance < input.minKeeperBalance * (1n + planBatches)) {
     alerts.push('keeper_balance_low')
   }
 
@@ -65,10 +73,15 @@ export function decideKeeperAction(input: KeeperInput): KeeperDecision {
       action = 'startNextRound'
       break
     case Phase.WAITING:
+      if ((input.planPending ?? 0n) > 0n) {
+        action = 'executePlans'
+      }
       break
     case Phase.OPEN:
       if (input.now >= input.closeAt) {
         action = 'lock'
+      } else if ((input.planPending ?? 0n) > 0n) {
+        action = 'executePlans'
       }
       break
     case Phase.LOCKED:

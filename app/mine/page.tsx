@@ -6,6 +6,7 @@ import { useAccount } from 'wagmi'
 import type { GridCellData } from '@/components/mine/grid-cell'
 import { PanelStats } from '@/components/mine/panel-stats'
 import { ResultPanel } from '@/components/mine/result-panel'
+import { PlanReviewModal } from '@/components/mine/plan-panel'
 import { ReviewModal } from '@/components/mine/review-modal'
 import { SelectionPanel, type MineTab } from '@/components/mine/selection-panel'
 import { SquareGrid } from '@/components/mine/square-grid'
@@ -32,10 +33,14 @@ import {
   useWalletRound,
 } from '@/hooks/use-round'
 import { useLastJackpotRound } from '@/hooks/use-last-jackpot'
+import { usePlan } from '@/hooks/use-plan'
+import { useReferral } from '@/hooks/use-referral'
+import { usePlanWrites } from '@/hooks/use-plan-writes'
 import { useReached } from '@/hooks/use-reached'
 import { useRoundMiners } from '@/hooks/use-round-miners'
 import { canEnterPhase } from '@/lib/entry-phase'
 import { PRESETS, type PresetName } from '@/lib/presets'
+import { planBlockReason, planDeposit } from '@/lib/plan-math'
 import { Phase, phaseLabel } from '@/lib/types'
 import type { WalletRoundData } from '@/lib/types'
 import { formatWeiToEth, multiplyWei, parseEthToWei } from '@/lib/wei'
@@ -87,6 +92,13 @@ export default function MinePage() {
   const [toast, setToast] = useState<string | null>(null)
   const [toastHash, setToastHash] = useState<string | undefined>()
   const [lastAction, setLastAction] = useState<'entry' | 'claim'>('entry')
+  const [planRounds, setPlanRounds] = useState(5)
+  const [planLoop, setPlanLoop] = useState(false)
+  const [planReviewOpen, setPlanReviewOpen] = useState(false)
+  const [lastPlanAction, setLastPlanAction] = useState<'start' | 'stop' | 'loop'>('start')
+  const planState = usePlan(address)
+  const referral = useReferral(address)
+  const planWrites = usePlanWrites()
 
   const totalsArray = totals.data as readonly bigint[] | undefined
   const busiest = totalsArray?.reduce((max, value) => (value > max ? value : max), 0n) ?? 0n
@@ -143,6 +155,28 @@ export default function MinePage() {
   }, [isConfirmed, confirmedHash, resetWrites, lastAction])
   /* eslint-enable react-hooks/set-state-in-effect */
 
+  const { isConfirmed: planConfirmed, hash: planHash, reset: resetPlanWrites } = planWrites
+  const { refetch: refetchPlan } = planState
+  /* eslint-disable react-hooks/set-state-in-effect -- a confirmed plan transaction closes the review modal and refreshes the plan */
+  useEffect(() => {
+    if (planConfirmed) {
+      setToastHash(planHash)
+      void refetchPlan()
+      setPlanReviewOpen(false)
+      if (lastPlanAction === 'start') {
+        setSelected(new Set())
+        setActivePreset(null)
+        setToast('Auto plan started')
+      } else if (lastPlanAction === 'stop') {
+        setToast('Auto plan stopped')
+      } else {
+        setToast('Loop updated')
+      }
+      resetPlanWrites()
+    }
+  }, [planConfirmed, planHash, refetchPlan, resetPlanWrites, lastPlanAction])
+  /* eslint-enable react-hooks/set-state-in-effect */
+
   useEffect(() => {
     if (!toast) {
       return
@@ -152,6 +186,26 @@ export default function MinePage() {
   }, [toast])
 
   const parsedAmount = parseEthToWei(amount)
+  const selectedBlocks = useMemo(() => Array.from(selected).sort((a, b) => a - b), [selected])
+  const planBlock = planBlockReason({
+    rounds: planRounds,
+    squares: selected.size,
+    amountPerSquare: parsedAmount,
+    minAmount: limits.minWei,
+    maxAmount: limits.maxWei,
+    minDeposit: planState.minDeposit,
+    paused,
+    planExists: Boolean(planState.plan && (planState.plan.active || planState.plan.balance > 0n)),
+    capReached:
+      planState.activeCount !== undefined &&
+      planState.maxActive !== undefined &&
+      planState.activeCount >= planState.maxActive,
+    registered: planState.registered,
+  })
+  const planDepositWei =
+    parsedAmount !== null && selected.size > 0
+      ? planDeposit(planRounds, selected.size, parsedAmount)
+      : 0n
   const totalWei =
     parsedAmount !== null && selected.size > 0 ? multiplyWei(parsedAmount, selected.size) : 0n
 
@@ -435,6 +489,33 @@ export default function MinePage() {
             roundClosed={roundClosed}
             walletAvailable={wallet.available}
             connectError={wallet.message}
+            autoPlan={
+              planState.enabled
+                ? {
+                    rounds: planRounds,
+                    onRoundsChange: setPlanRounds,
+                    loop: planLoop,
+                    onLoopChange: setPlanLoop,
+                    plan: planState.plan,
+                    deposit: planDepositWei,
+                    minDeposit: planState.minDeposit,
+                    blockReason: planBlock,
+                    busy: planWrites.isSubmitting || planWrites.isConfirming,
+                    onStart: () => {
+                      planWrites.reset()
+                      setPlanReviewOpen(true)
+                    },
+                    onStop: () => {
+                      setLastPlanAction('stop')
+                      void planWrites.cancelPlan()
+                    },
+                    onToggleLoop: (next) => {
+                      setLastPlanAction('loop')
+                      void planWrites.setLoop(next, planState.consent)
+                    },
+                  }
+                : undefined
+            }
             claims={visibleClaims}
             onConnect={wallet.connect}
             onReview={() => setReviewOpen(true)}
@@ -449,6 +530,12 @@ export default function MinePage() {
           walletRound={walletRoundResult.walletRound as WalletRoundData | undefined}
         />
 
+        {planWrites.errorMessage && !planReviewOpen ? (
+          <p role="alert" className="text-xs text-loss">
+            {planWrites.errorMessage}
+          </p>
+        ) : null}
+
         {writes.errorMessage ? (
           <p role="alert" className="text-xs text-loss">
             {writes.errorMessage}
@@ -461,12 +548,36 @@ export default function MinePage() {
         ) : null}
       </div>
 
+      <PlanReviewModal
+        open={planReviewOpen}
+        onClose={() => setPlanReviewOpen(false)}
+        onConfirm={() => {
+          setLastPlanAction('start')
+          void planWrites.createPlan({
+            squares: selectedBlocks,
+            amountPerSquare: parsedAmount ?? 0n,
+            rounds: planRounds,
+            loop: planLoop,
+            hasConsent: planState.consent,
+          })
+        }}
+        squares={selectedBlocks}
+        amountPerSquare={parsedAmount ?? 0n}
+        rounds={planRounds}
+        loop={planLoop}
+        needsConsent={planState.consent !== true}
+        deposit={planDepositWei}
+        minDeposit={planState.minDeposit}
+        isSubmitting={planWrites.isSubmitting || planWrites.isConfirming}
+        errorMessage={planWrites.errorMessage}
+      />
+
       <ReviewModal
         open={reviewOpen}
         onClose={() => setReviewOpen(false)}
         onConfirm={() => {
           setLastAction('entry')
-          writes.enterAndStart(Array.from(selected), parsedAmount ?? 0n)
+          writes.enterAndStart(Array.from(selected), parsedAmount ?? 0n, referral.pendingRef)
         }}
         roundId={entryRoundId}
         needsStart={needsStart}
@@ -474,6 +585,7 @@ export default function MinePage() {
         squares={Array.from(selected)}
         amountPerSquare={parsedAmount ?? 0n}
         totalWei={totalWei}
+        referrer={referral.pendingRef}
         isSubmitting={writes.isSubmitting || writes.isConfirming}
         errorMessage={writes.errorMessage}
       />

@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import { encodeFunctionData } from 'viem'
+import { encodeFunctionData, type Address } from 'viem'
 import { useAccount, useEstimateFeesPerGas, useEstimateGas } from 'wagmi'
 import { Button } from '@/components/ui/button'
 import { Modal } from '@/components/ui/modal'
@@ -18,6 +18,7 @@ export function ReviewModal({
   squares,
   amountPerSquare,
   totalWei,
+  referrer,
   isSubmitting,
   errorMessage,
 }: {
@@ -30,6 +31,8 @@ export function ReviewModal({
   squares: number[]
   amountPerSquare: bigint
   totalWei: bigint
+  /** A referrer the first deploy is tagged with (v3 link), or undefined. */
+  referrer?: Address
   isSubmitting: boolean
   errorMessage: string | null
 }) {
@@ -39,13 +42,19 @@ export function ReviewModal({
   const enterData = useMemo(
     () =>
       open && squares.length > 0
-        ? encodeFunctionData({
-            abi: roundManagerAbi,
-            functionName: 'enter',
-            args: [squares, amountPerSquare],
-          })
+        ? referrer
+          ? encodeFunctionData({
+              abi: roundManagerAbi,
+              functionName: 'enterWithReferrer',
+              args: [referrer, squares, amountPerSquare],
+            })
+          : encodeFunctionData({
+              abi: roundManagerAbi,
+              functionName: 'enter',
+              args: [squares, amountPerSquare],
+            })
         : undefined,
-    [open, squares, amountPerSquare],
+    [open, squares, amountPerSquare, referrer],
   )
   const startData = useMemo(
     () =>
@@ -91,6 +100,7 @@ export function ReviewModal({
         <Row label="Amount per block" value={`${formatWeiToEth(amountPerSquare, 5)} ETH`} />
         <Row label="Total" value={`${formatWeiToEth(totalWei, 5)} ETH`} strong />
         <Row label="Contract" value={managerAddress} mono />
+        {referrer ? <Row label="Referred by" value={referrer} mono /> : null}
         <Row
           label="Estimated network fee"
           value={
@@ -109,6 +119,13 @@ export function ReviewModal({
         <p className="mt-4 text-xs text-gold">
           The next round starts first, so your wallet asks for two confirmations: one to start the
           round, then one for your deploy.
+        </p>
+      ) : null}
+      {referrer ? (
+        <p className="mt-4 text-xs text-text-2">
+          This first deploy also sets your referrer for good: it cannot be changed later. The
+          referrer earns a 1% POTS bonus on your POTS claims, minted on top of your reward, and it
+          costs you nothing.
         </p>
       ) : null}
       <p className="mt-4 text-xs text-text-2">

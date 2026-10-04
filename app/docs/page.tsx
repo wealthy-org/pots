@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { InfoPage, InfoSection } from '@/components/layout/info-page'
+import { autoPlanEnabled, v3Enabled } from '@/lib/contracts'
 
 export const metadata: Metadata = { title: 'Docs | POTS' }
 
@@ -45,6 +46,55 @@ export default function DocsPage() {
         </ul>
       </InfoSection>
 
+      {autoPlanEnabled ? (
+        <InfoSection title="Auto plans">
+          <p>
+            An auto plan deploys the same blocks, with the same amount on each, in each of the next
+            rounds. You pay the whole plan when you start it, from 1 to 100 rounds, and the ETH
+            waits in the plan contract until its round comes. There is no plan fee.
+          </p>
+          <ul className="list-disc pl-5">
+            <li>
+              You can stop the plan at any time and take back the ETH that is not yet deployed. ETH
+              already deployed in a round follows the normal round rules.
+            </li>
+            <li>
+              The scheduler enters the round for you. It cannot change your blocks or amount, and it
+              can only place the deploys of your plan. Only you can take the ETH back, with Stop
+              auto.
+            </li>
+            <li>
+              While a plan is active, the scheduler also opens the next round, so a round can start
+              a few seconds after the last one is settled.
+            </li>
+            <li>
+              Loop rewards, when you turn it on, moves the ETH you won in the plan&apos;s last round
+              into the plan. It needs a separate permission from your wallet, and you can turn it
+              off at any time.
+            </li>
+            <li>
+              A plan ends when its ETH no longer covers one more round. Stop it then to take back
+              what is left. A round that cannot take the deploy is skipped. Outcomes stay random and
+              a plan does not improve your odds.
+            </li>
+          </ul>
+        </InfoSection>
+      ) : null}
+      {v3Enabled ? (
+        <InfoSection title="Referrals and burn">
+          <p>
+            A wallet can have one referrer. It is set once, for good, and only before the wallet
+            deploys for the first time. You cannot refer yourself. When a referred wallet claims
+            POTS, the contract mints an extra 1% of that claim to the referrer. The referred wallet
+            pays nothing and gets the same reward as anyone else, and no ETH is involved.
+          </p>
+          <p>
+            Anyone can burn POTS they hold from the Token page. A burn is permanent and lowers the
+            total supply. It does not lower the total ever minted, so the cap is counted on the
+            amount ever minted and a burn never makes room for more POTS.
+          </p>
+        </InfoSection>
+      ) : null}
       <InfoSection title="Who can stop what">
         <ul className="list-disc pl-5">
           <li>

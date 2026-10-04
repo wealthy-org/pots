@@ -29,6 +29,15 @@ export function validateConfig(env: ConfigEnv): ConfigIssue[] {
   const chainId = resolveChainId(env)
   const issues: ConfigIssue[] = []
 
+  // The plan feature is optional on every chain: unset means no plan control and no plan step.
+  const plan = env.NEXT_PUBLIC_AUTO_PLAN_ADDRESS
+  if (plan && (!ADDRESS_PATTERN.test(plan) || ZERO_ADDRESS.test(plan))) {
+    issues.push({
+      variable: 'NEXT_PUBLIC_AUTO_PLAN_ADDRESS',
+      problem: 'is not a valid, non-zero address',
+    })
+  }
+
   if (!KNOWN_CHAIN_IDS.includes(chainId)) {
     issues.push({
       variable: 'NEXT_PUBLIC_ROBINHOOD_CHAIN_ID',

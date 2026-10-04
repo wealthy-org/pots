@@ -2,7 +2,7 @@ import { createPublicClient, createWalletClient, http, type Abi } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import adapterAbiJson from '@/contracts/abi/PotsRandomnessAdapter.json'
 import { activeChain } from './chains'
-import { managerAddress, roundManagerAbi } from './contracts'
+import { autoPlanAbi, autoPlanAddress, managerAddress, roundManagerAbi } from './contracts'
 import type { KeeperAction } from './keeper-decision'
 import { classifyChainError } from './keeper-errors'
 import { KeeperChainError, type KeeperChain, type KeeperChainState } from './keeper-run'
@@ -12,6 +12,10 @@ const adapterAbi = adapterAbiJson as Abi
 const MAX_RECEIPT_WAIT_MS = 15_000
 const RECEIPT_POLL_MS = 1_000
 const MAINNET_CHAIN_ID = 4663
+/** Plans per executePlans call: the plan contract caps a batch at this size (API-32). */
+const PLAN_BATCH = 20n
+/** Gas limit of a plan batch: below the 32M block of a typical Orbit chain, above 20 typical visits. */
+const PLAN_BATCH_GAS = 30_000_000n
 
 /**
  * Real chain access for the keeper. Errors are reduced to a kind: the raw viem message can
@@ -45,6 +49,24 @@ export function createKeeperChain(privateKey: `0x${string}`): KeeperChain {
       immutables = { lockedCancelDelay, forceCancelDelay, adapter }
     }
     return immutables
+  }
+
+  /** Plan positions still to visit and active plans; both 0 while the plan feature is off. */
+  async function readPlans(): Promise<{ planPending: bigint; activePlanCount: bigint }> {
+    if (!autoPlanAddress) return { planPending: 0n, activePlanCount: 0n }
+    const [planPending, activePlanCount] = await Promise.all([
+      publicClient.readContract({
+        address: autoPlanAddress,
+        abi: autoPlanAbi,
+        functionName: 'nextCursor',
+      }) as Promise<bigint>,
+      publicClient.readContract({
+        address: autoPlanAddress,
+        abi: autoPlanAbi,
+        functionName: 'activePlanCount',
+      }) as Promise<bigint>,
+    ])
+    return { planPending, activePlanCount }
   }
 
   async function refundWindowOpen(roundId: bigint): Promise<boolean> {
@@ -88,13 +110,14 @@ export function createKeeperChain(privateKey: `0x${string}`): KeeperChain {
           readManager<readonly [bigint, bigint, bigint]>('balances'),
           publicClient.getBlock({ blockTag: 'latest' }),
         ])
-        const [fee, keeperBalance] = await Promise.all([
+        const [fee, keeperBalance, plans] = await Promise.all([
           publicClient.readContract({
             address: fixed.adapter,
             abi: adapterAbi,
             functionName: 'quoteFee',
           }) as Promise<bigint>,
           publicClient.getBalance({ address: account.address }),
+          readPlans(),
         ])
 
         // A chain that makes no empty blocks leaves the latest block timestamp behind the wall
@@ -108,6 +131,7 @@ export function createKeeperChain(privateKey: `0x${string}`): KeeperChain {
           treasury: balances[2],
           randomnessFee: fee,
           keeperBalance,
+          ...plans,
         }
         if (roundId === 0n) {
           return {
@@ -160,15 +184,24 @@ export function createKeeperChain(privateKey: `0x${string}`): KeeperChain {
           publicClient.getTransactionCount({ address: account.address, blockTag: 'latest' }),
         ])
         if (pendingNonce > latestNonce) throw new KeeperChainError('reverted')
-        const args = action === 'settle' || action === 'refundRandomness' ? [roundId] : []
+        const target =
+          action === 'executePlans' && autoPlanAddress
+            ? { address: autoPlanAddress, abi: autoPlanAbi, args: [PLAN_BATCH] as const }
+            : {
+                address: managerAddress,
+                abi: roundManagerAbi,
+                args: action === 'settle' || action === 'refundRandomness' ? [roundId] : [],
+              }
         const { request } = await publicClient.simulateContract({
           account,
-          address: managerAddress,
-          abi: roundManagerAbi,
           functionName: action,
-          args,
+          ...target,
         })
-        const hash = await walletClient.writeContract(request)
+        // executePlans stops a batch cleanly when gas runs low, so an estimate (the least gas that does
+        // not revert) can pass with 0 plans visited. A fixed limit lets the batch run to its size.
+        const hash = await walletClient.writeContract(
+          action === 'executePlans' ? { ...request, gas: PLAN_BATCH_GAS } : request,
+        )
         const receipt = await publicClient.waitForTransactionReceipt({
           hash,
           timeout: Math.max(1_000, Math.min(timeoutMs, MAX_RECEIPT_WAIT_MS)),

@@ -95,4 +95,23 @@ describe('describeConfigIssues', () => {
       ]),
     ).toBe('A is not set; B is not a valid URL')
   })
+
+  it('treats the plan address as optional and checks it when it is set', () => {
+    expect(validateConfig({ ...mainnet })).toEqual([])
+    expect(validateConfig({ ...mainnet, NEXT_PUBLIC_AUTO_PLAN_ADDRESS: address })).toEqual([])
+    expect(
+      validateConfig({
+        NEXT_PUBLIC_ROBINHOOD_CHAIN_ID: '31337',
+        NEXT_PUBLIC_AUTO_PLAN_ADDRESS: '0x12',
+      }),
+    ).toEqual([
+      { variable: 'NEXT_PUBLIC_AUTO_PLAN_ADDRESS', problem: 'is not a valid, non-zero address' },
+    ])
+    expect(
+      validateConfig({
+        ...mainnet,
+        NEXT_PUBLIC_AUTO_PLAN_ADDRESS: '0x0000000000000000000000000000000000000000',
+      }).map((issue) => issue.variable),
+    ).toEqual(['NEXT_PUBLIC_AUTO_PLAN_ADDRESS'])
+  })
 })

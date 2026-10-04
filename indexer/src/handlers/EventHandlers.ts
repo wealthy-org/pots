@@ -18,6 +18,46 @@ function defaultStats() {
   }
 }
 
+type StatsContext = {
+  WalletStats: {
+    get: (id: string) => Promise<WalletStatsRow | undefined>
+    set: (row: WalletStatsRow) => void
+  }
+}
+
+type WalletStatsRow = {
+  id: string
+  roundsPlayed: number
+  ethDeployed: bigint
+  potsClaimed: bigint
+  referrals: number
+  referralPots: bigint
+}
+
+/** Adds to a wallet's all-time totals (the leaderboard and the referral earnings read this row). */
+async function addWalletStats(
+  context: StatsContext,
+  wallet: string,
+  delta: Partial<Omit<WalletStatsRow, 'id'>>,
+) {
+  const row = (await context.WalletStats.get(wallet)) ?? {
+    id: wallet,
+    roundsPlayed: 0,
+    ethDeployed: 0n,
+    potsClaimed: 0n,
+    referrals: 0,
+    referralPots: 0n,
+  }
+  context.WalletStats.set({
+    id: wallet,
+    roundsPlayed: row.roundsPlayed + (delta.roundsPlayed ?? 0),
+    ethDeployed: row.ethDeployed + (delta.ethDeployed ?? 0n),
+    potsClaimed: row.potsClaimed + (delta.potsClaimed ?? 0n),
+    referrals: row.referrals + (delta.referrals ?? 0),
+    referralPots: row.referralPots + (delta.referralPots ?? 0n),
+  })
+}
+
 indexer.onEvent(
   { contract: 'PotsRoundManager', event: 'RoundOpened', fields },
   async ({ event, context }) => {
@@ -113,6 +153,11 @@ indexer.onEvent(
       refunded,
       netEth: ethClaimed + refunded - deposited,
       claimTxHashes: walletRound?.claimTxHashes ?? [],
+    })
+
+    await addWalletStats(context, wallet, {
+      roundsPlayed: walletRound ? 0 : 1,
+      ethDeployed: total,
     })
 
     const walletEntity = await context.Wallet.get(wallet)
@@ -276,6 +321,7 @@ indexer.onEvent(
     })
 
     if (kind === 1) {
+      await addWalletStats(context, wallet, { potsClaimed: amount })
       const stats = (await context.ProtocolStats.get(STATS_ID)) ?? defaultStats()
       context.ProtocolStats.set({
         ...stats,
@@ -352,5 +398,39 @@ indexer.onEvent(
     if (round) {
       context.Round.set({ ...round, phase: 'CANCELLED' })
     }
+  },
+)
+
+indexer.onEvent(
+  { contract: 'PotsRoundManager', event: 'ReferrerSet', fields },
+  async ({ event, context }) => {
+    const wallet = event.params.wallet.toLowerCase()
+    const referrer = event.params.referrer.toLowerCase()
+    context.Referral.set({
+      id: wallet,
+      referrer,
+      blockNumber: BigInt(event.block.number),
+      timestamp: BigInt(event.block.timestamp),
+      txHash: event.transaction.hash ?? '',
+    })
+    await addWalletStats(context, referrer, { referrals: 1 })
+  },
+)
+
+indexer.onEvent(
+  { contract: 'PotsRoundManager', event: 'ReferralRewarded', fields },
+  async ({ event, context }) => {
+    const referrer = event.params.referrer.toLowerCase()
+    const txHash = event.transaction.hash ?? ''
+    context.ReferralReward.set({
+      id: `${txHash}-${event.logIndex}`,
+      roundId: event.params.roundId,
+      wallet: event.params.wallet.toLowerCase(),
+      referrer,
+      amount: event.params.amount,
+      timestamp: BigInt(event.block.timestamp),
+      txHash,
+    })
+    await addWalletStats(context, referrer, { referralPots: event.params.amount })
   },
 )

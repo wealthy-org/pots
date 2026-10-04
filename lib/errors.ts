@@ -1,5 +1,5 @@
 import { decodeErrorResult } from 'viem'
-import { roundManagerAbi } from './contracts'
+import { autoPlanAbi, potsTokenAbi, roundManagerAbi } from './contracts'
 
 const errorMessages: Record<string, string> = {
   NotOpen: 'The round is not accepting deploys.',
@@ -22,6 +22,20 @@ const errorMessages: Record<string, string> = {
   CancelNotAllowed: 'Cancellation is not allowed yet.',
   Unauthorized: 'This wallet is not authorized for that action.',
   Paused: 'New deploys are paused.',
+  PlanExists: 'You already have a plan. Stop it first, then start a new one.',
+  InvalidRounds: 'Choose between 1 and 100 rounds.',
+  DepositTooSmall: 'The plan is below the minimum deposit. Add rounds, blocks, or amount.',
+  PlanNotRegistered: 'Auto plans are not active on this deployment yet.',
+  PlanCapReached: 'The plan limit is reached. Try again later.',
+  LoopNeedsConsent: 'Loop needs your permission first. Confirm it in your wallet.',
+  PlanContractNotSet: 'Auto plans are not active on this deployment yet.',
+  NoPlan: 'You have no plan.',
+  NotManager: 'The plan contract only accepts ETH from the round manager.',
+  SelfReferral: 'You cannot refer yourself.',
+  ReferrerAlreadySet: 'This wallet already has a referrer. It cannot be changed.',
+  ReferralTooLate: 'A referrer can only be set before the first deploy of a wallet.',
+  ZeroAddress: 'Enter a valid wallet address.',
+  ERC20InsufficientBalance: 'Your POTS balance is lower than that amount.',
 }
 
 type ErrorCandidate = {
@@ -35,12 +49,14 @@ function decodeCustomError(data?: `0x${string}`): string | null {
   if (!data) {
     return null
   }
-  try {
-    const decoded = decodeErrorResult({ abi: roundManagerAbi, data })
-    return decoded.errorName ?? null
-  } catch {
-    return null
+  for (const abi of [roundManagerAbi, autoPlanAbi, potsTokenAbi]) {
+    try {
+      return decodeErrorResult({ abi, data }).errorName ?? null
+    } catch {
+      // Try the next contract.
+    }
   }
+  return null
 }
 
 export function describeContractError(error: unknown): string {

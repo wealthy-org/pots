@@ -1,10 +1,12 @@
 import type { Abi } from 'viem'
+import potsAutoPlanAbiJson from '@/contracts/abi/PotsAutoPlan.json'
 import potsRoundManagerAbiJson from '@/contracts/abi/PotsRoundManager.json'
 import potsTokenAbiJson from '@/contracts/abi/POTSToken.json'
 import { activeChain } from './chains'
 
 export const roundManagerAbi = potsRoundManagerAbiJson as Abi
 export const potsTokenAbi = potsTokenAbiJson as Abi
+export const autoPlanAbi = potsAutoPlanAbiJson as Abi
 
 const anvilDefaults = {
   manager: '0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9',
@@ -35,3 +37,26 @@ export const tokenAddress = resolveAddress(
 
 /** First block that can hold manager events; contract event scans start here instead of block 0. */
 export const managerDeployBlock = resolveBlock(process.env.NEXT_PUBLIC_ROUND_MANAGER_DEPLOY_BLOCK)
+
+/**
+ * The auto plan contract (v3), when one is configured. Unset or invalid means the plan feature is
+ * off: no control is rendered and the keeper skips plans.
+ */
+export const autoPlanAddress: `0x${string}` | undefined = parseOptionalAddress(
+  process.env.NEXT_PUBLIC_AUTO_PLAN_ADDRESS,
+)
+
+export const autoPlanEnabled = autoPlanAddress !== undefined
+
+function parseOptionalAddress(value: string | undefined): `0x${string}` | undefined {
+  if (value && /^0x[0-9a-fA-F]{40}$/.test(value) && !/^0x0{40}$/.test(value)) {
+    return value as `0x${string}`
+  }
+  return undefined
+}
+
+/**
+ * True when the app points at a v3 contract set. The plan contract exists only on v3, so its address
+ * is the signal: referral, burn, and totalMinted need the v3 manager and token and are hidden before.
+ */
+export const v3Enabled = autoPlanEnabled
