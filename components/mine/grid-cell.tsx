@@ -11,6 +11,8 @@ export type GridCellData = {
   you?: bigint | null
   scan?: boolean
   win?: boolean
+  /** Dimmed while the reveal shows the winning block, like the prototype. */
+  dim?: boolean
 }
 
 export function GridCell({
@@ -22,6 +24,7 @@ export function GridCell({
   you,
   scan,
   win,
+  dim,
   disabled,
   tabIndex,
   onToggle,
@@ -44,6 +47,10 @@ export function GridCell({
         ? 'border-gold/60 bg-[linear-gradient(180deg,#1a1610,#110f0b)] shadow-[inset_0_0_0_1px_rgba(232,194,122,0.25)]'
         : 'border-line hover:border-line-2'
 
+  // The scan and the winner stay bright while the rest of the grid is locked.
+  const disabledOpacity =
+    win || scan ? 'disabled:opacity-100' : dim ? 'disabled:opacity-30' : 'disabled:opacity-60'
+
   const label = `Block ${id}${total !== null ? `, ${formatWeiToEth(total, 5)} ETH deployed` : ''}${
     miners !== null ? `, ${miners} ${miners === 1 ? 'miner' : 'miners'}` : ''
   }${you && you > 0n ? `, you ${formatWeiToEth(you, 3)} ETH` : ''}${selected ? ', selected' : ''}${win ? ', winning block' : ''}`
@@ -59,7 +66,7 @@ export function GridCell({
       onClick={onToggle ? () => onToggle(id) : undefined}
       onFocus={onFocus}
       onKeyDown={onKeyDown}
-      className={`relative flex aspect-square flex-col justify-between overflow-hidden rounded border p-2 text-left transition-colors disabled:cursor-default disabled:opacity-60 max-md:p-1.5 ${stateClass}`}
+      className={`relative flex aspect-square flex-col justify-between overflow-hidden rounded border p-2 text-left transition-colors disabled:cursor-default max-md:p-1.5 ${disabledOpacity} ${stateClass}`}
     >
       {heat > 0 && !win ? (
         <span

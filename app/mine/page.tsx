@@ -35,6 +35,7 @@ import {
 import { useLastJackpotRound } from '@/hooks/use-last-jackpot'
 import { usePlan } from '@/hooks/use-plan'
 import { useReferral } from '@/hooks/use-referral'
+import { useRevealSequence } from '@/hooks/use-reveal-sequence'
 import { usePlanWrites } from '@/hooks/use-plan-writes'
 import { useReached } from '@/hooks/use-reached'
 import { useRoundMiners } from '@/hooks/use-round-miners'
@@ -79,10 +80,6 @@ export default function MinePage() {
   const history = useWalletHistory(address)
   const paused = usePaused().data === true
   const writes = usePotsWrites()
-  const phaseAnnouncement =
-    roundId !== undefined && roundId > 0n && round
-      ? `Round ${roundId.toString()}: ${phaseLabel(round.phase)}`
-      : ''
 
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [activePreset, setActivePreset] = useState<PresetName | null>(null)
@@ -103,7 +100,7 @@ export default function MinePage() {
   const totalsArray = totals.data as readonly bigint[] | undefined
   const busiest = totalsArray?.reduce((max, value) => (value > max ? value : max), 0n) ?? 0n
   const minerData = roundMiners.data
-  const cells: GridCellData[] = useMemo(
+  const liveCells: GridCellData[] = useMemo(
     () =>
       Array.from({ length: 25 }, (_, index) => {
         const total = totalsArray?.[index] ?? null
@@ -123,6 +120,27 @@ export default function MinePage() {
       }),
     [totalsArray, selected, round, minerData, busiest, myEntries.entries],
   )
+  const reveal = useRevealSequence({ roundId, round, cells: liveCells })
+  // While the reveal runs, the grid shows the round that just ended: the scan lands on its winning block.
+  const cells: GridCellData[] = useMemo(
+    () =>
+      reveal.cells
+        ? reveal.cells.map((cell, index) => ({
+            ...cell,
+            selected: selected.has(index + 1),
+            win: reveal.winIndex === index,
+            dim: reveal.winIndex !== null || reveal.landingIndex !== null,
+          }))
+        : liveCells,
+    [reveal.cells, reveal.winIndex, reveal.landingIndex, selected, liveCells],
+  )
+  const phaseAnnouncement = reveal.active
+    ? reveal.stage === 'hold'
+      ? `Round ${reveal.roundId?.toString()}: winning block ${(reveal.winIndex ?? 0) + 1}`
+      : `Round ${reveal.roundId?.toString()}: revealing the winning block`
+    : roundId !== undefined && roundId > 0n && round
+      ? `Round ${roundId.toString()}: ${phaseLabel(round.phase)}`
+      : ''
   const minersInRound =
     minerData?.miners != null &&
     totalsArray?.every((total, index) => {
@@ -219,7 +237,9 @@ export default function MinePage() {
   const claimPotsWei = claimableData?.[1] ?? 0n
   const claimRound = round?.phase === Phase.SETTLED || round?.phase === Phase.CANCELLED
   const claims: Array<{ label: string; onClick: () => void; disabled: boolean }> = []
-  if (isConnected && claimRound && roundId !== undefined) {
+  // A reward of the round on screen is offered only after the reveal has ended.
+  const revealingRound = reveal.active ? reveal.roundId : undefined
+  if (isConnected && claimRound && roundId !== undefined && revealingRound !== roundId) {
     const busy = writes.isSubmitting || writes.isConfirming
     if (claimEthWei > 0n) {
       claims.push({
@@ -248,7 +268,7 @@ export default function MinePage() {
   if (isConnected) {
     const busy = writes.isSubmitting || writes.isConfirming
     for (const past of pastClaims.rounds) {
-      if (past.roundId === roundId) {
+      if (past.roundId === roundId || past.roundId === revealingRound) {
         continue
       }
       if (past.eth > 0n) {
@@ -289,7 +309,8 @@ export default function MinePage() {
       ? 'claimed'
       : null
   }
-  const entryPhase = canEnterPhase(round?.phase, needsStart, roundClosed)
+  // The grid, the presets, and the stepper stay locked while the reveal plays (about 6 seconds).
+  const entryPhase = canEnterPhase(round?.phase, needsStart, roundClosed) && !reveal.active
 
   function toggleBlock(block: number) {
     if (!entryPhase) {
@@ -366,7 +387,10 @@ export default function MinePage() {
         cells={cells}
         onToggle={toggleBlock}
         disabled={!entryPhase}
-        scanning={round?.phase === Phase.RANDOMNESS_PENDING}
+        scanning={
+          reveal.active ? reveal.stage === 'await' : round?.phase === Phase.RANDOMNESS_PENDING
+        }
+        scanIndex={reveal.landingIndex}
       />
     )
 
@@ -374,10 +398,10 @@ export default function MinePage() {
     <div className="mine-layout">
       <div className="mine-stats">
         <PanelStats
-          roundId={roundId}
-          round={round}
+          roundId={reveal.active ? reveal.roundId : roundId}
+          round={reveal.active ? reveal.round : round}
           jackpotWei={(balances.data as readonly [bigint, bigint, bigint] | undefined)?.[1]}
-          miners={minersInRound}
+          miners={reveal.active ? null : minersInRound}
           roundsAgo={
             lastJackpot.data && roundId !== undefined && roundId >= lastJackpot.data
               ? Number(roundId - lastJackpot.data)
@@ -487,6 +511,7 @@ export default function MinePage() {
             paused={paused}
             needsStart={needsStart}
             roundClosed={roundClosed}
+            revealing={reveal.active}
             walletAvailable={wallet.available}
             connectError={wallet.message}
             autoPlan={
@@ -544,7 +569,11 @@ export default function MinePage() {
       </aside>
       <div className="mine-winners">
         {roundId !== undefined && roundId > 0n ? (
-          <WinnersPanel wallet={address} claimStateFor={claimStateFor} />
+          <WinnersPanel
+            wallet={address}
+            claimStateFor={claimStateFor}
+            revealing={reveal.hideResult}
+          />
         ) : null}
       </div>
 

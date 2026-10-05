@@ -81,6 +81,7 @@ export function SelectionPanel({
   paused,
   needsStart = false,
   roundClosed = false,
+  revealing = false,
   walletAvailable = true,
   connectError = null,
   autoPlan,
@@ -106,6 +107,8 @@ export function SelectionPanel({
   needsStart?: boolean
   /** The countdown ended and the keeper has not locked the round yet. */
   roundClosed?: boolean
+  /** The grid is showing the winner of the round that just ended; entries wait until it is over. */
+  revealing?: boolean
   /** False when no injected wallet exists, so Connect cannot work. */
   walletAvailable?: boolean
   connectError?: string | null
@@ -127,7 +130,7 @@ export function SelectionPanel({
   /** The Auto tab runs a plan when the plan feature is on (the tab is otherwise presets only). */
   const planActive = Boolean(autoPlan) && tab === 'auto' && isConnected
   const planRunning = planActive && hasPlan(autoPlan?.plan)
-  const phaseAllowsEntry = canEnterPhase(round?.phase, needsStart, roundClosed)
+  const phaseAllowsEntry = canEnterPhase(round?.phase, needsStart, roundClosed) && !revealing
   const canReview = isConnected && count > 0 && amountValid && phaseAllowsEntry && !paused
 
   let disabledReason: string | null = null
@@ -139,6 +142,8 @@ export function SelectionPanel({
     disabledReason = 'Select at least one block'
   } else if (!amountValid) {
     disabledReason = 'Enter a valid amount within the limits'
+  } else if (revealing) {
+    disabledReason = 'Revealing the winning block'
   } else if (!phaseAllowsEntry) {
     disabledReason = 'The round is not accepting deploys'
   }

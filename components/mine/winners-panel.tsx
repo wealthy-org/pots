@@ -32,9 +32,12 @@ function avatarHue(address: string): number {
 export function WinnersPanel({
   wallet,
   claimStateFor,
+  revealing = false,
 }: {
   wallet?: string
   claimStateFor?: (roundId: bigint) => WinnerClaimState | null
+  /** True while the grid still scans toward the winning block: the list must not give it away. */
+  revealing?: boolean
 }) {
   const { data, isLoading, isError } = useSettledRounds(3)
   const [open, setOpen] = useState(true)
@@ -65,13 +68,15 @@ export function WinnersPanel({
           </svg>
         </button>
         <span className="font-mono text-[11px] text-text-3">
-          {latest
-            ? `Round #${latest.roundId.toString()} · ${total} ${total === 1 ? 'winner' : 'winners'}`
-            : 'No settled rounds'}
+          {revealing
+            ? 'Revealing...'
+            : latest
+              ? `Round #${latest.roundId.toString()} · ${total} ${total === 1 ? 'winner' : 'winners'}`
+              : 'No settled rounds'}
         </span>
       </div>
 
-      {open ? (
+      {open && !revealing ? (
         <>
           {isLoading ? <p className="px-1 py-4 text-xs text-text-2">Loading rounds...</p> : null}
           {isError ? (

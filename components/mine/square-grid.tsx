@@ -10,16 +10,20 @@ export function SquareGrid({
   cells,
   disabled,
   scanning = false,
+  scanIndex: landingIndex = null,
   onToggle,
 }: {
   cells: GridCellData[]
   disabled?: boolean
   /** True while randomness is pending; the scan highlight re-renders only this grid. */
   scanning?: boolean
+  /** A block lit by the landing scan of the reveal; it replaces the random scan. */
+  scanIndex?: number | null
   onToggle?: (id: number) => void
 }) {
   const [activeIndex, setActiveIndex] = useState(0)
-  const scanIndex = useScanHighlight(scanning)
+  const randomIndex = useScanHighlight(scanning)
+  const scanIndex = landingIndex ?? randomIndex
   const refs = useRef<Array<HTMLButtonElement | null>>([])
 
   function handleKeyDown(event: KeyboardEvent<HTMLButtonElement>, index: number) {
