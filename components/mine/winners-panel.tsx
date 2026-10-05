@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { EthMark, PotsMark } from '@/components/ui/token-mark'
 import { useSettledRounds } from '@/hooks/use-settled-rounds'
-import { shortenAddress } from '@/lib/format'
+import { avatarHue, shortenAddress } from '@/lib/format'
 import { formatWeiToEth } from '@/lib/wei'
 
 export type WinnerClaimState = 'ready' | 'claimed'
@@ -18,10 +18,6 @@ function Badge({ kind }: { kind: 'you' | 'top' }) {
       {kind}
     </span>
   )
-}
-
-function avatarHue(address: string): number {
-  return 20 + (parseInt(address.slice(2, 6), 16) % 40)
 }
 
 /**

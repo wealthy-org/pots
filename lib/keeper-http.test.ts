@@ -26,7 +26,14 @@ const settled: KeeperChainState = {
   keeperBalance: 10n ** 18n,
 }
 
-function setup(overrides: { env?: Record<string, string | undefined>; chain?: KeeperChain } = {}) {
+function setup(
+  overrides: {
+    env?: Record<string, string | undefined>
+    chain?: KeeperChain
+    recordHistory?: KeeperHandlerDeps['recordHistory']
+    now?: () => number
+  } = {},
+) {
   const logs: string[] = []
   const sent: string[] = []
   let current = settled
@@ -44,8 +51,9 @@ function setup(overrides: { env?: Record<string, string | undefined>; chain?: Ke
     getEnv: () => overrides.env ?? { ...LOCAL, KEEPER_PRIVATE_KEY: KEY, KEEPER_SECRET: SECRET },
     createChain: () => chain,
     limiter: createFailureLimiter({ max: 3, windowMs: 60_000 }),
-    clock: { now: () => 1_700_000_000_000, sleep: async () => undefined },
+    clock: { now: overrides.now ?? (() => 1_700_000_000_000), sleep: async () => undefined },
     log: (line) => logs.push(line),
+    recordHistory: overrides.recordHistory,
   }
   return { handlers: createKeeperHandlers(deps), logs, sent }
 }
@@ -267,5 +275,66 @@ describe('keeper handler deadline', () => {
     await throwing.post(request('POST', SECRET))
     expect(logs.join('\n')).toContain('TypeError')
     expect(logs.join('\n')).not.toContain('secret-path')
+  })
+})
+
+describe('keeper problem history', () => {
+  const broken: KeeperChain = {
+    async readState() {
+      throw new KeeperChainError('rpc_error')
+    },
+    async send() {
+      return { txHash: '0x' }
+    },
+  }
+
+  it('records a problem run after the answer is decided and does not change the answer', async () => {
+    const seen: string[] = []
+    const { handlers } = setup({
+      chain: broken,
+      recordHistory: async (report) => void seen.push(report.alerts.join(',')),
+    })
+    const response = await handlers.post(request('POST', SECRET))
+    expect(response.status).toBe(503)
+    expect(await response.json()).toMatchObject({ alerts: ['rpc_error'] })
+    expect(seen).toEqual(['rpc_error'])
+  })
+
+  it('answers the same when the history writer rejects', async () => {
+    const plain = setup({ chain: broken })
+    const withFailure = setup({
+      chain: broken,
+      recordHistory: async () => {
+        throw new Error('database down')
+      },
+    })
+    const a = await plain.handlers.post(request('POST', SECRET))
+    const b = await withFailure.handlers.post(request('POST', SECRET))
+    expect(b.status).toBe(a.status)
+    expect(await b.json()).toEqual(await a.json())
+  })
+
+  it('does not record for the read-only status call', async () => {
+    const recordHistory = vi.fn(async () => undefined)
+    const { handlers } = setup({ chain: broken, recordHistory })
+    await handlers.get(request('GET', SECRET))
+    expect(recordHistory).not.toHaveBeenCalled()
+  })
+
+  it('skips the history write when the call already used most of its time', async () => {
+    let t = 1_700_000_000_000
+    const recordHistory = vi.fn(async () => undefined)
+    const slow: KeeperChain = {
+      async readState() {
+        t += 26_000
+        throw new KeeperChainError('rpc_error')
+      },
+      async send() {
+        return { txHash: '0x' }
+      },
+    }
+    const { handlers } = setup({ chain: slow, recordHistory, now: () => t })
+    await handlers.post(request('POST', SECRET))
+    expect(recordHistory).not.toHaveBeenCalled()
   })
 })

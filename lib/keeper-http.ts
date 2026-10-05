@@ -13,6 +13,8 @@ const BUDGET_MS = 25_000
 // cron-job.org cuts a request at 30 s; past this the call answers 503 instead of hanging.
 const HARD_DEADLINE_MS = 28_000
 const POLL_MS = 2_000
+// The history write starts only while this much of the call is left, so it cannot push a call past cron-job.org's 30 s.
+const HISTORY_LATEST_START_MS = 25_000
 
 export type KeeperHandlerDeps = {
   getEnv: () => Record<string, string | undefined>
@@ -20,6 +22,8 @@ export type KeeperHandlerDeps = {
   limiter: FailureLimiter
   clock: KeeperClock
   log: (line: string) => void
+  /** Best-effort problem history (API-53); absent means no history. It must never throw. */
+  recordHistory?: (report: KeeperReport) => Promise<void>
 }
 
 function json(body: unknown, status: number): Response {
@@ -107,6 +111,7 @@ export function createKeeperHandlers(deps: KeeperHandlerDeps) {
         }
       }
 
+      const startedAt = deps.clock.now()
       const report = await withDeadline(run(chain, config.config), HARD_DEADLINE_MS)
       deps.log(
         JSON.stringify({
@@ -117,6 +122,14 @@ export function createKeeperHandlers(deps: KeeperHandlerDeps) {
           alerts: report.alerts,
         }),
       )
+      // Problem history comes after the answer is decided and changes nothing about it (D-33).
+      if (
+        label === 'run' &&
+        deps.recordHistory &&
+        deps.clock.now() - startedAt < HISTORY_LATEST_START_MS
+      ) {
+        await deps.recordHistory(report).catch(() => undefined)
+      }
       return json(publicReport(report), report.httpStatus)
     } catch (error) {
       // A fixed body; the log names only the error class, because a message can carry a key or URL.
@@ -150,6 +163,7 @@ export function createKeeperHandlers(deps: KeeperHandlerDeps) {
 
 export function createDefaultKeeperHandlers(
   createChain: (config: KeeperConfig) => KeeperChain,
+  recordHistory?: (report: KeeperReport) => Promise<void>,
 ): ReturnType<typeof createKeeperHandlers> {
   return createKeeperHandlers({
     getEnv: () => process.env,
@@ -160,5 +174,6 @@ export function createDefaultKeeperHandlers(
       sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
     },
     log: (line) => console.info(line),
+    recordHistory,
   })
 }

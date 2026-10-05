@@ -33,6 +33,10 @@ export async function installMockWallet(page: Page, options: MockWalletOptions) 
     })
   })
 
+  await page.exposeFunction('__e2eSignMessage', async (hex: string) =>
+    account.signMessage({ message: { raw: hex as Hex } }),
+  )
+
   await page.addInitScript(
     ({ address, chainId, rpcUrl, mode }) => {
       type Listener = (...args: unknown[]) => void
@@ -41,6 +45,7 @@ export async function installMockWallet(page: Page, options: MockWalletOptions) 
       const w = window as unknown as E2eWindow & {
         ethereum: unknown
         __e2eSendTransaction: (raw: string) => Promise<string>
+        __e2eSignMessage: (hex: string) => Promise<string>
       }
       w.__e2e = state
 
@@ -65,6 +70,11 @@ export async function installMockWallet(page: Page, options: MockWalletOptions) 
               emit('chainChanged', '0x' + target.toString(16))
               return null
             }
+            case 'personal_sign':
+              if (state.mode === 'reject') {
+                throw Object.assign(new Error('User rejected the request.'), { code: 4001 })
+              }
+              return w.__e2eSignMessage(String(params?.[0]))
             case 'eth_sendTransaction':
               if (state.mode === 'reject') {
                 throw Object.assign(new Error('User rejected the request.'), { code: 4001 })

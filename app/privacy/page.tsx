@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { InfoPage, InfoSection } from '@/components/layout/info-page'
+import { chatEnabled } from '@/lib/chat-flag'
 import { v3Enabled } from '@/lib/contracts'
 
 export const metadata: Metadata = { title: 'Privacy | POTS' }
@@ -20,6 +21,18 @@ export default function PrivacyPage() {
             : null}
         </p>
       </InfoSection>
+      {chatEnabled ? (
+        <InfoSection title="Chat">
+          <p>
+            The chat stores your wallet address and the text of your message in a database run by a
+            third party (Neon). Messages are deleted every day at 00:00 UTC. If you set a nickname,
+            the nickname and your wallet address are kept until you remove the nickname. Signing in
+            to chat uses a cookie that lasts 12 hours and proves only that you signed with your
+            wallet. The chat stores no email, name, or IP address. Anyone can read the chat, so do
+            not write anything private.
+          </p>
+        </InfoSection>
+      ) : null}
       <InfoSection title="What is public">
         <p>
           Your wallet address, deploys, and claims are transactions on a public blockchain. Anyone

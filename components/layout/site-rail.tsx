@@ -2,12 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useChatControls } from '@/components/chat/chat-provider'
 import { NavIcon } from '@/components/layout/nav-icon'
 import { RAIL_LINKS } from '@/lib/nav'
 
 /** Quick-action rail of mine.html. The active page is marked in gold. */
 export function SiteRail() {
   const pathname = usePathname()
+  const chat = useChatControls()
 
   return (
     <aside
@@ -30,6 +32,20 @@ export function SiteRail() {
           <NavIcon name={link.icon} />
         </Link>
       ))}
+      {chat.enabled ? (
+        <button
+          type="button"
+          title="Chat"
+          aria-label="Chat"
+          aria-expanded={chat.open}
+          onClick={() => chat.setOpen(!chat.open)}
+          className={`grid h-9 w-full place-items-center rounded-lg transition-colors ${
+            chat.open ? 'bg-gold/10 text-gold' : 'text-text-2 hover:bg-white/[0.03] hover:text-text'
+          }`}
+        >
+          <NavIcon name="chat" />
+        </button>
+      ) : null}
     </aside>
   )
 }

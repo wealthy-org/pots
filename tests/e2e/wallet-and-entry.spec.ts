@@ -139,5 +139,8 @@ test.describe('plan flag unset', () => {
     await expect(page.getByRole('region', { name: 'Auto plan' })).toHaveCount(0)
     await expect(page.getByRole('button', { name: /^Start auto/ })).toHaveCount(0)
     await expect(page.getByRole('button', { name: /^MINE/ })).toBeVisible()
+    // The chat is off too: no rail button and no panel (NEXT_PUBLIC_CHAT_ENABLED is unset).
+    await expect(page.getByRole('button', { name: 'Chat', exact: true })).toHaveCount(0)
+    await expect(page.getByRole('dialog', { name: 'Chat' })).toHaveCount(0)
   })
 })

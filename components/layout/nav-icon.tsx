@@ -22,6 +22,14 @@ export function NavIcon({
       </svg>
     )
   }
+  if (name === 'chat') {
+    // The speech bubble of the prototype rail (mine.html).
+    return (
+      <svg viewBox="0 0 16 16" className={className} aria-hidden="true" {...strokeProps}>
+        <path d="M3 3.5h10a1 1 0 011 1v6a1 1 0 01-1 1H7l-3 2.5v-2.5H3a1 1 0 01-1-1v-6a1 1 0 011-1z" />
+      </svg>
+    )
+  }
   if (name === 'fairness') {
     return (
       <svg

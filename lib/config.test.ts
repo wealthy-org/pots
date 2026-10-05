@@ -114,4 +114,19 @@ describe('describeConfigIssues', () => {
       }).map((issue) => issue.variable),
     ).toEqual(['NEXT_PUBLIC_AUTO_PLAN_ADDRESS'])
   })
+
+  it('accepts the chat switch only as true or false', () => {
+    expect(
+      validateConfig({ NEXT_PUBLIC_ROBINHOOD_CHAIN_ID: '31337', NEXT_PUBLIC_CHAT_ENABLED: 'true' }),
+    ).toEqual([])
+    expect(
+      validateConfig({
+        NEXT_PUBLIC_ROBINHOOD_CHAIN_ID: '31337',
+        NEXT_PUBLIC_CHAT_ENABLED: 'false',
+      }),
+    ).toEqual([])
+    expect(
+      validateConfig({ NEXT_PUBLIC_ROBINHOOD_CHAIN_ID: '31337', NEXT_PUBLIC_CHAT_ENABLED: 'yes' }),
+    ).toEqual([{ variable: 'NEXT_PUBLIC_CHAT_ENABLED', problem: 'must be true or false' }])
+  })
 })

@@ -2,7 +2,7 @@ import { v3Enabled } from './contracts'
 import { indexerEnabled } from './indexer'
 
 export type NavIconName =
-  'mine' | 'token' | 'stats' | 'history' | 'more' | 'docs' | 'fairness' | 'contracts'
+  'mine' | 'token' | 'stats' | 'history' | 'more' | 'docs' | 'fairness' | 'contracts' | 'chat'
 
 /** Primary navigation, in the order of mine.html. Stake joins when the staking feature ships (SD-08). */
 export const NAV_LINKS = [

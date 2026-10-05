@@ -35,6 +35,7 @@ export default defineConfig({
       NEXT_PUBLIC_ROBINHOOD_CHAIN_ID: '46630',
       NEXT_PUBLIC_ROBINHOOD_RPC_URL: testnetRpc,
       NEXT_PUBLIC_INDEXER_URL: 'https://indexer.e2e.invalid/v1/graphql',
+      DATABASE_URL: '',
       NEXT_PUBLIC_ROUND_MANAGER_ADDRESS: process.env.E2E_MANAGER_ADDRESS ?? '',
       NEXT_PUBLIC_POTS_TOKEN_ADDRESS: process.env.E2E_TOKEN_ADDRESS ?? '',
       NEXT_PUBLIC_ROUND_MANAGER_DEPLOY_BLOCK: process.env.E2E_DEPLOY_BLOCK ?? recentBlock(),

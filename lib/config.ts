@@ -38,6 +38,12 @@ export function validateConfig(env: ConfigEnv): ConfigIssue[] {
     })
   }
 
+  // The chat switch is optional: only the exact words true or false are allowed (D-34).
+  const chat = env.NEXT_PUBLIC_CHAT_ENABLED
+  if (chat && chat !== 'true' && chat !== 'false') {
+    issues.push({ variable: 'NEXT_PUBLIC_CHAT_ENABLED', problem: 'must be true or false' })
+  }
+
   if (!KNOWN_CHAIN_IDS.includes(chainId)) {
     issues.push({
       variable: 'NEXT_PUBLIC_ROBINHOOD_CHAIN_ID',

@@ -15,3 +15,8 @@ export function roundsAgoLabel(roundsAgo: number | null | undefined): string {
   }
   return `${roundsAgo} ${roundsAgo === 1 ? 'round' : 'rounds'} ago`
 }
+
+/** A stable warm hue from an address, so each wallet keeps its own avatar color. */
+export function avatarHue(address: string): number {
+  return 20 + (parseInt(address.slice(2, 6), 16) % 40)
+}

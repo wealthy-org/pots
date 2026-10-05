@@ -32,6 +32,8 @@ export default defineConfig({
       NEXT_PUBLIC_ROBINHOOD_CHAIN_ID: '31337',
       NEXT_PUBLIC_ROBINHOOD_RPC_URL: `http://127.0.0.1:${anvilPort}`,
       NEXT_PUBLIC_INDEXER_URL: '',
+      // Next loads .env.local, which holds the Neon dev string: the default suites never use it.
+      DATABASE_URL: '',
       NEXT_PUBLIC_AUTO_PLAN_ADDRESS: PLAN,
       KEEPER_PRIVATE_KEY: KEEPER_KEY,
       KEEPER_SECRET,

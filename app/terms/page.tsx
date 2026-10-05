@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { InfoPage, InfoSection } from '@/components/layout/info-page'
+import { chatEnabled } from '@/lib/chat-flag'
 import { autoPlanEnabled, v3Enabled } from '@/lib/contracts'
 
 export const metadata: Metadata = { title: 'Terms | POTS' }
@@ -51,6 +52,17 @@ export default function TermsPage() {
             A referrer is set once and cannot be changed. The referral bonus is minted by the
             contract as a share of a referred wallet&apos;s POTS claim and is not a payment from the
             project. A burn of POTS is permanent and cannot be undone.
+          </p>
+        </InfoSection>
+      ) : null}
+      {chatEnabled ? (
+        <InfoSection title="Chat">
+          <p>
+            You are responsible for what you write. Do not post spam, scams, threats, or other
+            people&apos;s private information, and do not pose as the project or its team. Links are
+            shown as plain text; never follow one you do not trust. Messages can be removed by the
+            owner at any time, the chat is cleared every day at 00:00 UTC, and nobody in the chat is
+            offering you advice or a return.
           </p>
         </InfoSection>
       ) : null}
