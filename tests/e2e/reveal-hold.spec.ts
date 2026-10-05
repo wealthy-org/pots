@@ -28,6 +28,15 @@ async function fulfillWhenRequested(roundId: bigint, square: number): Promise<vo
 
 const WIN_SQUARE = 4
 
+/** Computed look of a block button: its scale and its box shadow. */
+async function cellLook(locator: import('@playwright/test').Locator) {
+  return locator.evaluate((node) => {
+    const style = getComputedStyle(node)
+    // Tailwind writes scale-* as the CSS `scale` property ("none" or "1.06"), not as a transform.
+    const scale = style.scale === 'none' ? 1 : Number(style.scale.split(' ')[0])
+    return { scale, shadow: style.boxShadow }
+  })
+}
 /** Runs a full round through the keeper route while the page is open on it. */
 async function endRoundWhileWatching(
   page: import('@playwright/test').Page,
@@ -56,12 +65,35 @@ test.describe('winner landing and hold', () => {
     page,
     request,
   }) => {
+    // The block lit by the scan glows while the reveal runs: a block with an outer shadow before any
+    // block is marked as the winner, so the winner cannot satisfy this on its own.
+    const scanGlow = page.waitForFunction(
+      () =>
+        Array.from(document.querySelectorAll('[aria-label="5 by 5 mining grid"] button')).some(
+          (button) => {
+            if (button.getAttribute('aria-label')?.includes('winning block')) return false
+            const shadow = getComputedStyle(button).boxShadow
+            return shadow !== 'none' && !shadow.includes('inset')
+          },
+        ),
+      null,
+      { timeout: 40_000 },
+    )
     const id = await endRoundWhileWatching(page, request)
     const winning = page.getByRole('button', { name: /^Block 4,.*winning block/ })
 
     // The page polls every 5 s, so the reveal starts within a poll of the keeper call.
     await expect(winning).toBeVisible({ timeout: 25_000 })
     const holdStarted = Date.now()
+    await scanGlow
+    // The winner is larger than a normal block and glows; a neighbor is not and does not.
+    const win = await cellLook(winning)
+    expect(win.scale).toBeGreaterThan(1.03)
+    expect(win.shadow).not.toBe('none')
+    await page.screenshot({ path: 'test-results/reveal-hold.png' })
+    const neighbor = await cellLook(page.getByRole('button', { name: /^Block 5,/ }))
+    expect(neighbor.scale).toBe(1)
+    expect(neighbor.shadow).toBe('none')
     await page.screenshot({ path: 'test-results/reveal-hold.png', fullPage: true })
     await expect(page.getByText(`Round #${id}`, { exact: true })).toBeVisible()
     await expect(page.getByText('Winning block: 4')).toBeVisible()
@@ -90,6 +122,9 @@ test.describe('winner landing and hold', () => {
     const winning = page.getByRole('button', { name: /^Block 4,.*winning block/ })
     await expect(winning).toBeVisible({ timeout: 25_000 })
     await expect(page.getByRole('button', { name: /^Claim/ })).toHaveCount(0)
+    const look = await cellLook(winning)
+    expect(look.scale).toBeGreaterThan(1.03)
+    expect(look.shadow).not.toBe('none')
     await expect(winning).toBeHidden({ timeout: 15_000 })
   })
 
@@ -174,5 +209,44 @@ test.describe('winner landing and hold', () => {
       timeout: 9_000,
     })
     await expect(page.getByRole('button', { name: /winning block/ })).toHaveCount(0)
+  })
+
+  test('every lit timer segment glows, and an unlit one does not', async ({
+    page,
+    syncBrowserClock,
+  }) => {
+    // Enter first: earlier tests moved the chain clock ahead, so the browser clock is set from the
+    // block of this entry, whose time is the start of the countdown.
+    await playerEnter([WIN_SQUARE], 10n ** 15n)
+    await syncBrowserClock()
+    await page.goto('/mine')
+    await connect(page)
+    const segments = page.locator('[aria-hidden="true"].flex.h-2 > i')
+    await expect(segments).toHaveCount(30)
+    // Let a few seconds run, so that both lit and unlit segments exist. The page's own timers are
+    // faked, so each step moves its clock and then gives React a moment to render.
+    const readLooks = () =>
+      segments.evaluateAll((nodes) =>
+        nodes.map((node) => getComputedStyle(node).boxShadow !== 'none'),
+      )
+    let looks = await readLooks()
+    for (let step = 0; step < 20 && looks.every(Boolean); step += 1) {
+      await page.clock.runFor(1_000)
+      await page.waitForTimeout(100)
+      looks = await readLooks()
+    }
+    const lit = looks.filter(Boolean).length
+    expect(lit).toBeGreaterThan(20)
+    expect(lit).toBeLessThan(30)
+    // Lit segments come first, with no gap: every one of them glows, and no unlit one does.
+    expect(looks.slice(0, lit).every(Boolean)).toBe(true)
+    expect(looks.slice(lit).some(Boolean)).toBe(false)
+    const bar = await segments.first().locator('xpath=..').boundingBox()
+    if (bar) {
+      await page.screenshot({
+        path: 'test-results/timer-glow.png',
+        clip: { x: bar.x - 16, y: bar.y - 40, width: bar.width + 32, height: 70 },
+      })
+    }
   })
 })

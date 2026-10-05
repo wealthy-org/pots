@@ -39,10 +39,12 @@ export function GridCell({
   onKeyDown?: (event: KeyboardEvent<HTMLButtonElement>) => void
   buttonRef?: (element: HTMLButtonElement | null) => void
 }) {
+  // The scan block glows, and the winner glows and grows about 6%, raised above its neighbors so the
+  // glow and the growth are not hidden (owner request 2026-10-05, SD-17).
   const stateClass = win
-    ? 'border-gold-1 bg-[linear-gradient(150deg,var(--gold-1),var(--gold-2)_55%,var(--gold-3))] text-gold-ink'
+    ? 'z-10 scale-[1.06] border-gold-1 bg-[linear-gradient(150deg,var(--gold-1),var(--gold-2)_55%,var(--gold-3))] text-gold-ink shadow-[0_0_30px_4px_rgba(232,194,122,0.6)]'
     : scan
-      ? 'border-gold-1 shadow-[0_0_26px_-6px_rgba(232,194,122,0.38)]'
+      ? 'z-10 border-gold-1 shadow-[0_0_24px_3px_rgba(232,194,122,0.55)]'
       : selected
         ? 'border-gold/60 bg-[linear-gradient(180deg,#1a1610,#110f0b)] shadow-[inset_0_0_0_1px_rgba(232,194,122,0.25)]'
         : 'border-line hover:border-line-2'
@@ -66,7 +68,7 @@ export function GridCell({
       onClick={onToggle ? () => onToggle(id) : undefined}
       onFocus={onFocus}
       onKeyDown={onKeyDown}
-      className={`relative flex aspect-square flex-col justify-between overflow-hidden rounded border p-2 text-left transition-colors disabled:cursor-default max-md:p-1.5 ${disabledOpacity} ${stateClass}`}
+      className={`relative flex aspect-square flex-col justify-between overflow-hidden rounded border p-2 text-left motion-safe:transition-[transform,box-shadow,border-color,background-color] disabled:cursor-default max-md:p-1.5 ${disabledOpacity} ${stateClass}`}
     >
       {heat > 0 && !win ? (
         <span
