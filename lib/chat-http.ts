@@ -26,6 +26,8 @@ export type ChatHandlerDeps = {
     signature: `0x${string}`
   }) => Promise<boolean>
   limiter: FailureLimiter
+  /** Counts reads that reached the function (cache misses): API-49 is public, so it needs a ceiling. */
+  readLimiter: FailureLimiter
   now: () => number
   log: (line: string) => void
   chainId: () => number
@@ -175,6 +177,11 @@ export function createChatHandlers(deps: ChatHandlerDeps) {
         limitRaw !== null && /^\d{1,3}$/.test(limitRaw)
           ? Math.min(MAX_LIMIT, Math.max(1, Number(limitRaw)))
           : DEFAULT_LIMIT
+      const source = sourceKey(request)
+      if (deps.readLimiter.isBlocked(source)) {
+        return fail('CHAT_RATE_LIMITED', 429, { 'Retry-After': '30' })
+      }
+      deps.readLimiter.recordFailure(source)
       return guarded('list', async () => {
         const messages = await store.list({ after, limit })
         return json({ day: new Date(deps.now()).toISOString().slice(0, 10), messages }, 200, {
@@ -291,4 +298,9 @@ export function createChatHandlers(deps: ChatHandlerDeps) {
 
 export function createDefaultLimiter(): FailureLimiter {
   return createFailureLimiter({ max: 10, windowMs: 60_000 })
+}
+
+/** 120 uncached reads a minute per source: a poll every 5 seconds is 12, so several tabs fit. */
+export function createReadLimiter(): FailureLimiter {
+  return createFailureLimiter({ max: 120, windowMs: 60_000 })
 }

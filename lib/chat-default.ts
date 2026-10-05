@@ -1,10 +1,8 @@
-import { createPublicClient, http, type Hex } from 'viem'
-import { createChatHandlers, createDefaultLimiter } from './chat-http'
+import { verifyMessage, type Hex } from 'viem'
+import { createChatHandlers, createDefaultLimiter, createReadLimiter } from './chat-http'
 import { createDbChatStore } from './chat-store'
 import { resolveChainId } from './config'
 import { getDb } from './db/client'
-
-const verifier = createPublicClient({ transport: http('http://127.0.0.1') })
 
 /**
  * Module-level on purpose: the failure limiter keeps its counters between requests of one instance
@@ -16,10 +14,11 @@ export const chatHandlers = createChatHandlers({
     const db = getDb()
     return db ? createDbChatStore(db) : null
   },
-  // personal_sign of an externally owned account is checked locally: no RPC call is made.
+  // personal_sign of an externally owned account is recovered locally: no client and no RPC call.
   verifySignature: ({ wallet, message, signature }) =>
-    verifier.verifyMessage({ address: wallet, message, signature: signature as Hex }),
+    verifyMessage({ address: wallet, message, signature: signature as Hex }),
   limiter: createDefaultLimiter(),
+  readLimiter: createReadLimiter(),
   now: () => Date.now(),
   log: (line) => console.info(line),
   chainId: () => resolveChainId(process.env),

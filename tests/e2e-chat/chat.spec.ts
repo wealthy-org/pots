@@ -163,6 +163,22 @@ test.describe('chat', () => {
       expect(box?.height ?? 0).toBeGreaterThanOrEqual(43.5)
     }
     await page.screenshot({ path: 'test-results/chat-360.png', fullPage: false })
+    // With the nickname form open the sheet still shows every control inside the screen.
+    await dialog.getByRole('button', { name: 'Set nickname' }).click()
+    const field = dialog.getByLabel('3 to 16 letters, digits, or underscores')
+    await expect(field).toBeVisible()
+    for (const locator of [
+      field,
+      dialog.getByRole('button', { name: 'Save' }),
+      dialog.getByLabel('Message', { exact: true }),
+    ]) {
+      const box = await locator.boundingBox()
+      expect(
+        box && box.y >= 0 && box.y + box.height <= 740 && box.x >= 0 && box.x + box.width <= 360,
+      ).toBe(true)
+      expect(box?.height ?? 0).toBeGreaterThanOrEqual(43.5)
+    }
+    await page.screenshot({ path: 'test-results/chat-360-nickname.png', fullPage: false })
     await page.keyboard.press('Escape')
     await expect(dialog).toBeHidden()
     // The focus goes back to what opened the panel (the More button of the tab bar).

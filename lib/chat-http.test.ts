@@ -61,6 +61,7 @@ function setup(
     getStore: () => store,
     verifySignature: async () => options.verify ?? true,
     limiter: createFailureLimiter({ max: 3, windowMs: 60_000, now: () => NOW }),
+    readLimiter: createFailureLimiter({ max: 5, windowMs: 60_000, now: () => NOW }),
     now: () => NOW,
     log: (line) => logs.push(line),
     chainId: () => 46630,
@@ -132,6 +133,7 @@ describe('POST /api/chat/session', () => {
         return true
       },
       limiter: createFailureLimiter({ max: 3, windowMs: 60_000, now: () => NOW }),
+      readLimiter: createFailureLimiter({ max: 5, windowMs: 60_000, now: () => NOW }),
       now: () => NOW,
       log: (l) => logs.push(l),
       chainId: () => 46630,
@@ -177,6 +179,19 @@ describe('GET /api/chat/messages', () => {
       day: new Date(NOW).toISOString().slice(0, 10),
     })
     expect(calls).toEqual(['list:41:100'])
+  })
+
+  it('limits uncached reads per source, so a changing cursor cannot keep the database busy', async () => {
+    const { store, calls } = fakeStore()
+    const { handlers } = setup({ store })
+    const read = (after: number) =>
+      handlers.listMessages(new Request(`https://${HOST}/api/chat/messages?after=${after}`))
+    for (let i = 0; i < 5; i += 1) expect((await read(i)).status).toBe(200)
+    const blocked = await read(99)
+    expect(blocked.status).toBe(429)
+    expect(blocked.headers.get('retry-after')).toBe('30')
+    expect(await blocked.json()).toEqual({ error: 'CHAT_RATE_LIMITED' })
+    expect(calls).toHaveLength(5)
   })
 
   it('ignores a malformed cursor and limit', async () => {
