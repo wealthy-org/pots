@@ -6,7 +6,7 @@ import { potsTokenAbi, tokenAddress } from '@/lib/contracts'
 import { formatWeiToEth } from '@/lib/wei'
 
 const chipClass =
-  'hidden h-9 items-center gap-1.5 rounded-lg border border-line px-2.5 font-mono text-xs text-text lg:flex'
+  'hidden h-9 items-center gap-1.5 rounded-lg border border-line px-2.5 font-mono text-xs text-text md:flex'
 
 /** ETH and POTS balances of the connected wallet, as amounts only (no USD, D-23). */
 export function Balances() {

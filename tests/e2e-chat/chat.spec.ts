@@ -143,14 +143,16 @@ test.describe('chat', () => {
     })
   })
 
-  test('fits a 360 px screen as a bottom sheet with 44 px targets, opened from More', async ({
+  test('fits a 360 px screen as a bottom sheet with 44 px targets, opened from the bottom bar', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 360, height: 740 })
     await page.goto('/mine')
     await connect(page)
-    await page.getByRole('button', { name: 'More' }).click()
-    await page.getByRole('button', { name: 'Chat', exact: true }).click()
+    await page
+      .getByRole('navigation', { name: 'Primary mobile' })
+      .getByRole('button', { name: 'Chat', exact: true })
+      .click()
     const dialog = page.getByRole('dialog', { name: 'Chat' })
     await expect(dialog).toBeVisible()
     await signIn(dialog)
@@ -181,7 +183,43 @@ test.describe('chat', () => {
     await page.screenshot({ path: 'test-results/chat-360-nickname.png', fullPage: false })
     await page.keyboard.press('Escape')
     await expect(dialog).toBeHidden()
-    // The focus goes back to what opened the panel (the More button of the tab bar).
-    await expect(page.getByRole('button', { name: 'More' })).toBeFocused()
+    // The focus goes back to what opened the panel (the Chat button of the tab bar).
+    await expect(
+      page
+        .getByRole('navigation', { name: 'Primary mobile' })
+        .getByRole('button', { name: 'Chat' }),
+    ).toBeFocused()
+  })
+
+  test('Chat sits at the top of the rail from 1024 px, and in the bottom bar below it', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1024, height: 800 })
+    await openChat(page)
+    await page.keyboard.press('Escape')
+    const rail = page.getByRole('complementary', { name: 'Quick actions' })
+    const chat = await rail.getByRole('button', { name: 'Chat' }).boundingBox()
+    const fairness = await rail.getByRole('link', { name: 'Fairness' }).boundingBox()
+    // Under the 64 px header, above the page links, 48 px square.
+    expect(chat?.y ?? 0).toBeGreaterThan(64)
+    expect(chat?.y ?? 0).toBeLessThan(100)
+    expect(chat?.width).toBe(48)
+    expect(chat?.height).toBe(48)
+    expect(chat?.y ?? 999).toBeLessThan(fairness?.y ?? 0)
+
+    for (const width of [1023, 820, 360]) {
+      await page.setViewportSize({ width, height: 900 })
+      const bar = page.getByRole('navigation', { name: 'Primary mobile' })
+      await expect(bar.getByRole('button')).toHaveText(['Chat', 'More'])
+      const labels = await bar.locator('a, button').allInnerTexts()
+      expect(labels.map((text) => text.trim())).toEqual([
+        'Mine',
+        'Token',
+        'Stats',
+        'History',
+        'Chat',
+        'More',
+      ])
+    }
   })
 })

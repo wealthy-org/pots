@@ -117,7 +117,7 @@ export function ChatPanel({ open, onClose }: { open: boolean; onClose: () => voi
       ref={ref}
       aria-label="Chat"
       tabIndex={-1}
-      className="fixed right-0 bottom-0 left-0 z-[70] m-0 flex h-[min(85dvh,640px)] w-full max-w-none flex-col rounded-t-xl border border-line-2 bg-bg-elev p-0 text-text shadow-[0_-20px_60px_-20px_rgba(0,0,0,0.8)] not-open:hidden max-md:pb-[env(safe-area-inset-bottom)] lg:top-20 lg:right-auto lg:bottom-4 lg:left-[64px] lg:h-auto lg:w-[360px] lg:rounded-xl"
+      className="fixed right-0 bottom-0 left-0 z-[70] m-0 flex h-[min(85dvh,640px)] w-full max-w-none flex-col rounded-t-xl border border-line-2 bg-bg-elev p-0 text-text shadow-[0_-20px_60px_-20px_rgba(0,0,0,0.8)] not-open:hidden max-lg:pb-[env(safe-area-inset-bottom)] lg:top-20 lg:right-auto lg:bottom-4 lg:left-[72px] lg:h-auto lg:w-[360px] lg:rounded-xl"
     >
       <header className="flex items-start justify-between gap-3 border-b border-line px-4 py-3">
         <div>
@@ -128,7 +128,7 @@ export function ChatPanel({ open, onClose }: { open: boolean; onClose: () => voi
           type="button"
           onClick={onClose}
           aria-label="Close chat"
-          className="grid h-9 w-9 place-items-center rounded-md text-text-2 hover:bg-white/[0.04] hover:text-text max-md:h-11 max-md:w-11"
+          className="grid h-9 w-9 place-items-center rounded-md text-text-2 hover:bg-white/[0.04] hover:text-text max-lg:h-11 max-lg:w-11"
         >
           <svg
             viewBox="0 0 14 14"

@@ -37,7 +37,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <Providers>
           <SiteHeader />
           <SiteRail />
-          <main className="relative z-[1] mx-auto w-full max-w-[1180px] px-4 pt-6 pb-24 md:px-5 md:pb-10 lg:pl-[72px]">
+          <main className="relative z-[1] mx-auto w-full max-w-[1180px] px-4 pt-6 pb-24 md:px-5 lg:pb-10 lg:pl-[88px]">
             <ConfigNotice />
             <NetworkBanner />
             {children}

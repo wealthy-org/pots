@@ -2,24 +2,48 @@ import { v3Enabled } from './contracts'
 import { indexerEnabled } from './indexer'
 
 export type NavIconName =
-  'mine' | 'token' | 'stats' | 'history' | 'more' | 'docs' | 'fairness' | 'contracts' | 'chat'
+  | 'mine'
+  | 'token'
+  | 'stats'
+  | 'history'
+  | 'more'
+  | 'docs'
+  | 'fairness'
+  | 'contracts'
+  | 'chat'
+  | 'leaderboard'
 
-/** Primary navigation, in the order of mine.html. Stake joins when the staking feature ships (SD-08). */
-export const NAV_LINKS = [
+type NavLink = { href: string; label: string; icon: NavIconName }
+
+/**
+ * Top navigation from 1024 px (SD-19): Docs sits right of Mine and Leaderboard right of History.
+ * Leaderboard shows only while the indexer is enabled. Stake joins when staking ships (SD-08).
+ */
+export const NAV_LINKS: ReadonlyArray<NavLink> = [
+  { href: '/mine', label: 'Mine', icon: 'mine' },
+  { href: '/docs', label: 'Docs', icon: 'docs' },
+  { href: '/token', label: 'Token', icon: 'token' },
+  { href: '/stats', label: 'Stats', icon: 'stats' },
+  { href: '/history', label: 'History', icon: 'history' },
+  ...(indexerEnabled
+    ? [{ href: '/leaderboard', label: 'Leaderboard', icon: 'leaderboard' } as const]
+    : []),
+]
+
+/** Bottom bar below 1024 px: four links, then Chat (when on) and More (six buttons at most). */
+export const TAB_LINKS: ReadonlyArray<NavLink> = [
   { href: '/mine', label: 'Mine', icon: 'mine' },
   { href: '/token', label: 'Token', icon: 'token' },
   { href: '/stats', label: 'Stats', icon: 'stats' },
   { href: '/history', label: 'History', icon: 'history' },
-] as const satisfies ReadonlyArray<{ href: string; label: string; icon: NavIconName }>
+]
 
-/** Left rail buttons. Chat is omitted until the owner reopens it (D-22). */
-export const RAIL_LINKS = [
-  { href: '/docs', label: 'Docs', icon: 'docs' },
+/** Left rail buttons at the bottom of the rail, from 1024 px. Chat sits at the top of the rail. */
+export const RAIL_LINKS: ReadonlyArray<NavLink> = [
   { href: '/fairness', label: 'Fairness', icon: 'fairness' },
   { href: '/contracts', label: 'Contracts', icon: 'contracts' },
-] as const satisfies ReadonlyArray<{ href: string; label: string; icon: NavIconName }>
-
-/** Links of the mobile "More" sheet and of the header menu below 1024 px. */
+]
+/** Links of the mobile "More" sheet and of the header menu. */
 export const MORE_LINKS: ReadonlyArray<{ href: string; label: string }> = [
   { href: '/profile', label: 'Profile' },
   ...(indexerEnabled ? [{ href: '/leaderboard', label: 'Leaderboard' }] : []),

@@ -73,6 +73,12 @@ export function NavIcon({
           <path d="M10 2v3h3M6 8.5h5M6 11h5" />
         </>
       ) : null}
+      {name === 'leaderboard' ? (
+        <>
+          <path d="M5 2.5h6v3.2a3 3 0 01-6 0V2.5z" />
+          <path d="M5 3.5H2.8v1a2.2 2.2 0 002.2 2.2M11 3.5h2.2v1A2.2 2.2 0 0111 6.7M8 8.7v2.6M5.5 13.5h5" />
+        </>
+      ) : null}
       {name === 'contracts' ? <path d="M5.5 4.5L2 8l3.5 3.5M10.5 4.5L14 8l-3.5 3.5" /> : null}
     </svg>
   )

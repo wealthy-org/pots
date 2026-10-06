@@ -46,7 +46,7 @@ export function SiteHeader() {
         POTS
       </Link>
 
-      <nav className="ml-2 hidden items-center gap-0.5 md:flex" aria-label="Primary">
+      <nav className="ml-2 hidden items-center gap-0.5 lg:flex" aria-label="Primary">
         {NAV_LINKS.map((link) => {
           const active = pathname === link.href
           return (
@@ -71,7 +71,7 @@ export function SiteHeader() {
         <span
           role="status"
           title={`Network: ${networkState === 'ready' ? 'wallet connected' : networkState === 'wrong' ? 'wallet on another network' : 'no wallet connected'}`}
-          className="hidden h-9 items-center gap-1.5 rounded-lg border border-line px-2.5 text-xs text-text-2 lg:flex"
+          className="hidden h-9 items-center gap-1.5 rounded-lg border border-line px-2.5 text-xs text-text-2 md:flex lg:hidden xl:flex"
         >
           <span
             aria-hidden="true"
@@ -98,7 +98,7 @@ export function SiteHeader() {
           type="button"
           aria-label="Menu"
           onClick={() => setMenuOpen(true)}
-          className="grid h-9 w-9 place-items-center rounded-lg text-text-2 hover:bg-white/[0.03] hover:text-text max-md:min-h-11 max-md:min-w-11"
+          className="grid h-9 w-9 place-items-center rounded-lg text-text-2 hover:bg-white/[0.03] hover:text-text max-lg:min-h-11 max-lg:min-w-11"
         >
           <svg
             viewBox="0 0 16 16"

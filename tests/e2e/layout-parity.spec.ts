@@ -21,8 +21,8 @@ test.describe('mine.html layout parity', () => {
     await page.goto('/mine')
     await connect(page)
 
-    const nav = page.getByRole('navigation', { name: 'Primary' })
-    await expect(nav.getByRole('link')).toHaveText(['Mine', 'Token', 'Stats', 'History'])
+    const nav = page.getByRole('navigation', { name: 'Primary', exact: true })
+    await expect(nav.getByRole('link')).toHaveText(['Mine', 'Docs', 'Token', 'Stats', 'History'])
     const header = page.getByRole('banner')
     await expect(header.getByTitle(/^Network/)).toContainText('Anvil Local')
     await expect(header.getByTitle('ETH balance')).toContainText(/\d/)
@@ -40,8 +40,14 @@ test.describe('mine.html layout parity', () => {
     await connect(page)
 
     const rail = page.getByRole('complementary', { name: 'Quick actions' })
-    await expect(rail.getByRole('link')).toHaveCount(3)
-    await expect(rail.getByRole('link', { name: 'Docs' })).toHaveAttribute('href', '/docs')
+    // Docs moved to the top navigation (SD-19); the rail keeps Fairness and Contracts.
+    await expect(rail.getByRole('link')).toHaveCount(2)
+    await expect(rail.getByRole('link', { name: 'Docs' })).toHaveCount(0)
+    await expect(
+      page
+        .getByRole('navigation', { name: 'Primary', exact: true })
+        .getByRole('link', { name: 'Docs' }),
+    ).toHaveAttribute('href', '/docs')
     await expect(rail.getByRole('link', { name: 'Fairness' })).toHaveAttribute('href', '/fairness')
     await expect(rail.getByRole('link', { name: 'Contracts' })).toHaveAttribute(
       'href',
@@ -181,7 +187,7 @@ test.describe('information pages and profile', () => {
     await expect(page.getByText('0.001 ETH').first()).toBeVisible()
   })
 
-  const WIDTHS = [360, 800, 1024, 1440]
+  const WIDTHS = [360, 820, 1023, 1024, 1440]
   for (const width of WIDTHS) {
     test(`every information page and Profile is reachable at ${width} px`, async ({
       page,
@@ -194,7 +200,12 @@ test.describe('information pages and profile', () => {
 
       async function openDocsFamily(name: string, href: string) {
         if (width >= 1024) {
-          if (['Docs', 'Fairness', 'Contracts'].includes(name)) {
+          if (name === 'Docs') {
+            await page
+              .getByRole('navigation', { name: 'Primary', exact: true })
+              .getByRole('link', { name })
+              .click()
+          } else if (['Fairness', 'Contracts'].includes(name)) {
             await page
               .getByRole('complementary', { name: 'Quick actions' })
               .getByRole('link', { name })
@@ -256,6 +267,62 @@ test.describe('information pages and profile', () => {
           .click()
       }
       await expect(page).toHaveURL(/\/profile$/)
+    })
+  }
+
+  // SD-19: one switch point at 1024 px: tablet and phone get the bottom bar, laptop and desktop keep
+  // the top links and the rail.
+  for (const [width, desktop] of [
+    [360, false],
+    [820, false],
+    [1023, false],
+    [1024, true],
+    [1280, true],
+  ] as const) {
+    test(`at ${width} px the ${desktop ? 'top links and the rail' : 'bottom bar'} show, the other does not`, async ({
+      page,
+      installWallet,
+    }) => {
+      await page.setViewportSize({ width, height: 900 })
+      await installWallet()
+      await page.goto('/mine')
+      await connect(page)
+      const bottom = page.getByRole('navigation', { name: 'Primary mobile' })
+      const top = page.getByRole('navigation', { name: 'Primary', exact: true })
+      const rail = page.getByRole('complementary', { name: 'Quick actions' })
+      if (desktop) {
+        await expect(top).toBeVisible()
+        await expect(rail).toBeVisible()
+        await expect(bottom).toBeHidden()
+        const box = await rail.boundingBox()
+        expect(box?.width).toBe(64)
+        for (const name of ['Fairness', 'Contracts']) {
+          const link = await rail.getByRole('link', { name }).boundingBox()
+          expect(link?.width).toBe(48)
+          expect(link?.height).toBe(48)
+        }
+      } else {
+        await expect(bottom).toBeVisible()
+        await expect(top).toBeHidden()
+        await expect(rail).toBeHidden()
+        await expect(bottom.getByRole('link')).toHaveText(['Mine', 'Token', 'Stats', 'History'])
+        const header = page.getByRole('banner')
+        await expect(header.getByRole('button', { name: 'Menu' })).toBeVisible()
+        await expect(header.getByRole('button', { name: /^0x7099/ })).toBeVisible()
+        // Touch targets: the bottom bar buttons and the header menu are at least 44 px.
+        for (const target of [
+          ...(await bottom.locator('a, button').all()),
+          header.getByRole('button', { name: 'Menu' }),
+        ]) {
+          const size = await target.boundingBox()
+          expect(size?.height ?? 0).toBeGreaterThanOrEqual(43.5)
+          expect(size?.width ?? 0).toBeGreaterThanOrEqual(43.5)
+        }
+      }
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth > window.innerWidth + 1,
+      )
+      expect(overflow).toBe(false)
     })
   }
 })
