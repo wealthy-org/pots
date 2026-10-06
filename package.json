@@ -10,6 +10,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "cli": "tsx scripts/cli.ts",
+    "cli:status": "tsx scripts/cli.ts status",
+    "cli:grid": "tsx scripts/cli.ts grid",
+    "showcase": "tsx scripts/run.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "e2e": "playwright test",
@@ -44,6 +48,7 @@
     "postcss": "^8.5.28",
     "prettier": "^3.9.9",
     "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.15",
     "typescript": "^5.9.3",
     "vitest": "^5.0.3"
   }
