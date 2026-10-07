@@ -12,6 +12,7 @@ export type NavIconName =
   | 'contracts'
   | 'chat'
   | 'leaderboard'
+  | 'x'
 
 type NavLink = { href: string; label: string; icon: NavIconName }
 
@@ -44,7 +45,7 @@ export const RAIL_LINKS: ReadonlyArray<NavLink> = [
   { href: '/contracts', label: 'Contracts', icon: 'contracts' },
 ]
 /** Links of the mobile "More" sheet and of the header menu. */
-export const MORE_LINKS: ReadonlyArray<{ href: string; label: string }> = [
+export const MORE_LINKS: ReadonlyArray<{ href: string; label: string; external?: boolean }> = [
   { href: '/profile', label: 'Profile' },
   ...(indexerEnabled ? [{ href: '/leaderboard', label: 'Leaderboard' }] : []),
   ...(v3Enabled ? [{ href: '/referrals', label: 'Referrals' }] : []),
@@ -52,15 +53,17 @@ export const MORE_LINKS: ReadonlyArray<{ href: string; label: string }> = [
   { href: '/fairness', label: 'Fairness' },
   { href: '/contracts', label: 'Contracts' },
   { href: '/about', label: 'About' },
+  { href: 'https://x.com/potsmining', label: 'X (Twitter)', external: true },
   { href: '/terms', label: 'Terms' },
   { href: '/privacy', label: 'Privacy' },
 ]
 
 /** Row under the deploy button; the 18+ notice is plain text next to it. */
-export const FOOTER_LINKS: ReadonlyArray<{ href: string; label: string }> = [
+export const FOOTER_LINKS: ReadonlyArray<{ href: string; label: string; external?: boolean }> = [
   { href: '/about', label: 'About' },
   { href: '/token', label: 'Token' },
   ...(v3Enabled ? [{ href: '/referrals', label: 'Referrals' }] : []),
+  { href: 'https://x.com/potsmining', label: 'X', external: true },
   { href: '/terms', label: 'Terms' },
   { href: '/privacy', label: 'Privacy' },
 ]

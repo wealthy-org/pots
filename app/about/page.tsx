@@ -27,15 +27,33 @@ export default function AboutPage() {
             { href: '/docs', name: 'Docs', note: 'the rules of a round' },
             { href: '/fairness', name: 'Fairness', note: 'how the winning block is drawn' },
             { href: '/contracts', name: 'Contracts', note: 'where the code lives' },
+            {
+              href: 'https://x.com/potsmining',
+              name: 'X (Twitter)',
+              note: '@potsmining',
+              external: true,
+            },
           ].map((item) => (
             <li key={item.href}>
-              <Link
-                href={item.href}
-                className="inline-flex min-h-11 items-center gap-2 underline-offset-4 hover:underline"
-              >
-                <span className="font-semibold text-text">{item.name}</span>
-                <span className="text-text-2">{item.note}</span>
-              </Link>
+              {item.external ? (
+                <a
+                  href={item.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex min-h-11 items-center gap-2 underline-offset-4 hover:underline"
+                >
+                  <span className="font-semibold text-text">{item.name}</span>
+                  <span className="text-text-2">{item.note}</span>
+                </a>
+              ) : (
+                <Link
+                  href={item.href}
+                  className="inline-flex min-h-11 items-center gap-2 underline-offset-4 hover:underline"
+                >
+                  <span className="font-semibold text-text">{item.name}</span>
+                  <span className="text-text-2">{item.note}</span>
+                </Link>
+              )}
             </li>
           ))}
         </ul>

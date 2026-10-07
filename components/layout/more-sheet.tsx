@@ -11,13 +11,25 @@ export function MoreSheet({ open, onClose }: { open: boolean; onClose: () => voi
       <ul className="flex flex-col">
         {MORE_LINKS.map((link) => (
           <li key={link.href}>
-            <Link
-              href={link.href}
-              onClick={onClose}
-              className="flex min-h-11 items-center border-b border-line text-sm text-text-2 hover:text-text"
-            >
-              {link.label}
-            </Link>
+            {link.external ? (
+              <a
+                href={link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={onClose}
+                className="flex min-h-11 items-center border-b border-line text-sm text-text-2 hover:text-text"
+              >
+                {link.label}
+              </a>
+            ) : (
+              <Link
+                href={link.href}
+                onClick={onClose}
+                className="flex min-h-11 items-center border-b border-line text-sm text-text-2 hover:text-text"
+              >
+                {link.label}
+              </Link>
+            )}
           </li>
         ))}
       </ul>

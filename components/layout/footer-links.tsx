@@ -8,15 +8,27 @@ export function FooterLinks() {
       aria-label="Footer"
       className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] text-text-3"
     >
-      {FOOTER_LINKS.map((link) => (
-        <Link
-          key={link.href}
-          href={link.href}
-          className="inline-flex min-h-11 min-w-11 items-center justify-center px-1 hover:text-text"
-        >
-          {link.label}
-        </Link>
-      ))}
+      {FOOTER_LINKS.map((link) =>
+        link.external ? (
+          <a
+            key={link.href}
+            href={link.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center px-1 hover:text-text"
+          >
+            {link.label}
+          </a>
+        ) : (
+          <Link
+            key={link.href}
+            href={link.href}
+            className="inline-flex min-h-11 min-w-11 items-center justify-center px-1 hover:text-text"
+          >
+            {link.label}
+          </Link>
+        ),
+      )}
       <span>18+</span>
     </nav>
   )

@@ -94,6 +94,16 @@ export function SiteHeader() {
         </span>
         <Balances />
         <ConnectButton />
+        <a
+          href="https://x.com/potsmining"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="X (Twitter)"
+          title="X (Twitter) @potsmining"
+          className="grid h-9 w-9 place-items-center rounded-lg text-text-2 hover:bg-white/[0.03] hover:text-text max-lg:min-h-11 max-lg:min-w-11"
+        >
+          <NavIcon name="x" className="h-4 w-4" />
+        </a>
         <button
           type="button"
           aria-label="Menu"
